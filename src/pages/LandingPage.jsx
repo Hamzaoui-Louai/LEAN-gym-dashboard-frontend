@@ -1,43 +1,56 @@
-import LandingBackground from '../components/LandingBackground'
+import { useEffect } from 'react'
+import HeroSection from '../components/HeroSection'
+import StatsSection from '../components/StatsSection'
 
 function LandingPage() {
+  useEffect(() => {
+    if (!window.matchMedia('(min-width: 1024px)').matches) return
+
+    const sections = Array.from(document.querySelectorAll('[data-snap-section]'))
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let timer
+
+    const snap = () => {
+      const scrollY = window.scrollY
+      const viewportBottom = scrollY + window.innerHeight
+
+      let target = null
+      let maxVisible = -1
+      for (const section of sections) {
+        const visible =
+          Math.min(section.offsetTop + section.offsetHeight, viewportBottom) -
+          Math.max(section.offsetTop, scrollY)
+        if (visible > maxVisible) {
+          maxVisible = visible
+          target = section
+        }
+      }
+
+      if (target) {
+        const top = target.offsetTop
+        if (Math.abs(top - scrollY) > 1) {
+          window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' })
+        }
+      }
+    }
+
+    const onScroll = () => {
+      clearTimeout(timer)
+      timer = setTimeout(snap, 120)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('scroll', onScroll)
+    }
+  }, [])
+
   return (
-    <LandingBackground>
-      <section className="flex min-h-screen flex-col items-center justify-center px-6 py-24 text-center">
-        <p
-          className="animate-fade-up text-sm font-medium uppercase tracking-[0.35em] text-white/60 sm:text-base"
-          style={{ animationDelay: '0s' }}
-        >
-          Welcome to
-        </p>
-        <h1
-          className="animate-fade-up mt-3 text-6xl font-black leading-none tracking-tight text-white sm:text-7xl md:text-8xl lg:text-9xl"
-          style={{ animationDelay: '0.1s' }}
-        >
-          LEAN
-        </h1>
-        <p
-          className="animate-fade-up mt-6 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg md:text-xl"
-          style={{ animationDelay: '0.2s' }}
-        >
-          LEAN brings your entire gym into a single dashboard — manage member
-          subscriptions and activity, track revenue, oversee your staff, and
-          stay on top of maintenance, all in one place.
-        </p>
-        <div
-          className="animate-fade-up mt-10 flex flex-col items-center gap-4"
-          style={{ animationDelay: '0.3s' }}
-        >
-          <a
-            href="#"
-            className="animate-glow inline-block rounded-full bg-lime-400 px-8 py-4 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300 focus:ring-offset-2 focus:ring-offset-transparent sm:text-base"
-          >
-            Start free trial
-          </a>
-          <p className="text-xs text-white/50 sm:text-sm">No credit card required</p>
-        </div>
-      </section>
-    </LandingBackground>
+    <div className="bg-black">
+      <HeroSection />
+      <StatsSection />
+    </div>
   )
 }
 
