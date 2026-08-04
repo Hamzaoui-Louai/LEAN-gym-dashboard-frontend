@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@theme {
+  --animate-fade-up: fade-up 0.7s ease-out both;
+  --animate-glow: glow 3s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgb(163 230 53 / 0.35);
+    }
+    50% {
+      box-shadow: 0 0 24px 4px rgb(163 230 53 / 0.3);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-glow {
+    animation: none;
+  }
+}
