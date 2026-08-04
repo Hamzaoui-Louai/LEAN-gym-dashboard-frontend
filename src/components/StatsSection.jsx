@@ -26,21 +26,8 @@ function StatsSection() {
     <section
       ref={sectionRef}
       data-snap-section
-      className="relative overflow-hidden bg-black py-20 sm:py-28"
+      className="relative overflow-hidden py-20 sm:py-28"
     >
-      <div
-        aria-hidden="true"
-        className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-lime-400/25 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -right-28 top-1/3 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -bottom-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-fuchsia-500/20 blur-3xl"
-      />
-
       <div className="relative mx-auto max-w-6xl px-6 text-center">
         <p className="text-sm font-semibold uppercase tracking-[0.35em] text-lime-400">
           Why LEAN

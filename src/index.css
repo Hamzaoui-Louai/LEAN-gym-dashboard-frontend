@@ -3,6 +3,7 @@
 @theme {
   --animate-fade-up: fade-up 0.7s ease-out both;
   --animate-glow: glow 3s ease-in-out infinite;
+  --animate-fade-out: fade-out 0.3s ease-in both;
 
   @keyframes fade-up {
     from {
@@ -12,6 +13,15 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
     }
   }
 
@@ -28,6 +38,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
+  .animate-fade-out,
   .animate-glow {
     animation: none;
   }
