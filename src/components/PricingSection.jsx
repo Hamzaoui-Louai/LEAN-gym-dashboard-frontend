@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const plans = [
   {
@@ -144,23 +145,33 @@ function PricingSection() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="#"
-                onClick={(event) => {
-                  if (plan.cta === 'Contact sales') {
-                    event.preventDefault()
+              {plan.cta === 'Contact sales' ? (
+                <button
+                  type="button"
+                  onClick={() => {
                     setClosing(false)
                     setToastOpen(true)
-                  }
-                }}
-                className={`mt-8 block rounded-full py-3 text-center text-sm font-semibold uppercase tracking-wide transition sm:text-base ${
-                  plan.featured
-                    ? 'bg-lime-400 text-black hover:bg-lime-300'
-                    : 'border border-white/15 text-white hover:border-lime-400/50 hover:text-lime-300'
-                }`}
-              >
-                {plan.cta}
-              </a>
+                  }}
+                  className={`mt-8 block w-full rounded-full py-3 text-center text-sm font-semibold uppercase tracking-wide transition sm:text-base ${
+                    plan.featured
+                      ? 'bg-lime-400 text-black hover:bg-lime-300'
+                      : 'border border-white/15 text-white hover:border-lime-400/50 hover:text-lime-300'
+                  }`}
+                >
+                  {plan.cta}
+                </button>
+              ) : (
+                <Link
+                  to="/signup"
+                  className={`mt-8 block rounded-full py-3 text-center text-sm font-semibold uppercase tracking-wide transition sm:text-base ${
+                    plan.featured
+                      ? 'bg-lime-400 text-black hover:bg-lime-300'
+                      : 'border border-white/15 text-white hover:border-lime-400/50 hover:text-lime-300'
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              )}
             </div>
           ))}
         </div>

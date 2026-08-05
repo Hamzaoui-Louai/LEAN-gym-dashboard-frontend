@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import LandingBackground from './LandingBackground'
 
 function HeroSection() {
@@ -31,12 +32,12 @@ function HeroSection() {
           className="animate-fade-up mt-10 flex flex-col items-center gap-4"
           style={{ animationDelay: '0.3s' }}
         >
-          <a
-            href="#"
+          <Link
+            to="/signup"
             className="animate-glow inline-block rounded-full bg-lime-400 px-8 py-4 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300 focus:ring-offset-2 focus:ring-offset-transparent sm:text-base"
           >
             Start free trial
-          </a>
+          </Link>
           <p className="text-xs text-white/50 sm:text-sm">No credit card required</p>
         </div>
       </section>
