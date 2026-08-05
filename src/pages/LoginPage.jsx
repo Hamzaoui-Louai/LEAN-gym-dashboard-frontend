@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import TransitionLink from '../components/TransitionLink'
 import GlowBackground from '../components/GlowBackground'
-import loginSidePicture from '../assets/login-side-picture.jpg'
+import loginSidePicture from '../assets/login-side-picture.webp'
 
 const providerButtonClass =
   'flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-medium text-white/80 transition hover:border-white/25 hover:bg-white/10'

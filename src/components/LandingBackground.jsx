@@ -1,4 +1,4 @@
-import bgImage from '../assets/landing-page-background.jpg'
+import bgImage from '../assets/landing-page-background.webp'
 
 function LandingBackground({ children }) {
   return (
