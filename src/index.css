@@ -4,6 +4,7 @@
   --animate-fade-up: fade-up 0.7s ease-out both;
   --animate-glow: glow 3s ease-in-out infinite;
   --animate-fade-out: fade-out 0.3s ease-in both;
+  --animate-panel-sweep: panel-sweep 3.4s cubic-bezier(0.65, 0, 0.35, 1) both;
 
   @keyframes fade-up {
     from {
@@ -36,10 +37,29 @@
   }
 }
 
+@keyframes panel-sweep {
+  0% {
+    transform: translateX(2600px);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  35% {
+    transform: translateX(0);
+    animation-timing-function: linear;
+  }
+  50% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.55, 0.2);
+  }
+  100% {
+    transform: translateX(-2600px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-out,
-  .animate-glow {
+  .animate-glow,
+  .animate-panel-sweep {
     animation: none;
   }
 }

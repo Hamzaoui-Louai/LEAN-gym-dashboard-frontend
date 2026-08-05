@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import TransitionLink from '../components/TransitionLink'
 import GlowBackground from '../components/GlowBackground'
 import signupSidePicture from '../assets/signup-side-picture.jpg'
 
@@ -18,12 +18,12 @@ function SignupPage() {
             <span className="text-xl font-black tracking-tight text-lime-400">
               LEAN
             </span>
-            <Link
+            <TransitionLink
               to="/"
               className="text-sm font-medium text-white/50 transition hover:text-white"
             >
               ← Back to home
-            </Link>
+            </TransitionLink>
           </div>
 
           <div className="flex flex-1 flex-col justify-center py-12">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import TransitionLink from './TransitionLink'
 
 const plans = [
   {
@@ -161,7 +161,7 @@ function PricingSection() {
                   {plan.cta}
                 </button>
               ) : (
-                <Link
+                <TransitionLink
                   to="/signup"
                   className={`mt-8 block rounded-full py-3 text-center text-sm font-semibold uppercase tracking-wide transition sm:text-base ${
                     plan.featured
@@ -170,7 +170,7 @@ function PricingSection() {
                   }`}
                 >
                   {plan.cta}
-                </Link>
+                </TransitionLink>
               )}
             </div>
           ))}
