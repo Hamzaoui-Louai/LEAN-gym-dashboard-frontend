@@ -44,7 +44,7 @@ function StatsSection() {
           {stats.map((stat, index) => (
             <div
               key={stat.label}
-              className={`rounded-2xl border border-white/10 bg-white/5 p-6 text-left shadow-lg shadow-black/20 backdrop-blur-xl transition duration-300 hover:border-lime-400/30 hover:bg-white/10 sm:p-8 ${inView ? 'animate-fade-up' : 'opacity-0'}`}
+              className={`rounded-2xl border border-white/10 bg-white/5 p-6 text-left shadow-lg shadow-black/20 backdrop-blur-xl sm:p-8 ${inView ? 'animate-fade-up' : 'opacity-0'}`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <p className="text-xs font-medium uppercase tracking-widest text-white/50 sm:text-sm">
