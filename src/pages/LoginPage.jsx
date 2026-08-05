@@ -1,16 +1,28 @@
 import { useState } from 'react'
 import TransitionLink from '../components/TransitionLink'
 import GlowBackground from '../components/GlowBackground'
-import signupSidePicture from '../assets/signup-side-picture.jpg'
+import loginSidePicture from '../assets/login-side-picture.jpg'
 
 const providerButtonClass =
   'flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-medium text-white/80 transition hover:border-white/25 hover:bg-white/10'
 
-function SignupPage() {
+function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
     <div className="grid min-h-screen bg-black lg:grid-cols-12">
+      <div className="relative hidden lg:col-span-6 lg:block">
+        <img
+          src={loginSidePicture}
+          alt="Inside a modern gym"
+          className="absolute inset-0 h-full w-full object-cover object-right"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-b from-black via-black/30 to-transparent lg:bg-gradient-to-l lg:from-black lg:via-black/10 lg:to-transparent"
+        />
+      </div>
+
       <div className="relative flex flex-col lg:col-span-6 lg:min-h-screen">
         <GlowBackground className="absolute inset-0" />
         <div className="relative flex flex-1 flex-col px-6 py-8 sm:px-12 sm:py-10 lg:px-16">
@@ -28,14 +40,13 @@ function SignupPage() {
 
           <div className="flex flex-1 flex-col justify-center py-12">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-lime-400">
-              Get started
+              Welcome back
             </p>
             <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
-              First you'll have to sign up
+              Log in to LEAN
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
-              Create your LEAN account and bring your entire gym into a single
-              dashboard. No credit card required.
+              Access your dashboard and keep running your gym in one place.
             </p>
 
             <form
@@ -71,8 +82,8 @@ function SignupPage() {
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    placeholder="At least 8 characters"
+                    autoComplete="current-password"
+                    placeholder="Your password"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
                   />
                   <button
@@ -110,17 +121,17 @@ function SignupPage() {
                 type="submit"
                 className="mt-8 w-full rounded-full bg-lime-400 py-3.5 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300"
               >
-                Create account
+                Log in
               </button>
             </form>
 
             <p className="mt-6 max-w-xl text-sm text-white/60">
-              Already have an account?{' '}
+              Don't have an account?{' '}
               <TransitionLink
-                to="/login"
+                to="/signup"
                 className="font-semibold text-lime-400 transition hover:text-lime-300"
               >
-                Log in
+                Sign up
               </TransitionLink>
             </p>
 
@@ -170,41 +181,11 @@ function SignupPage() {
                 Microsoft
               </button>
             </div>
-
-            <p className="mt-8 max-w-xl text-xs leading-relaxed text-white/40">
-              By creating an account you agree to LEAN's{' '}
-              <a
-                href="#"
-                className="text-lime-400/80 underline-offset-2 hover:underline"
-              >
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a
-                href="#"
-                className="text-lime-400/80 underline-offset-2 hover:underline"
-              >
-                Privacy Policy
-              </a>
-              .
-            </p>
           </div>
         </div>
-      </div>
-
-      <div className="relative hidden lg:col-span-6 lg:block">
-        <img
-          src={signupSidePicture}
-          alt="Inside a modern gym"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-b from-black via-black/30 to-transparent lg:bg-gradient-to-r lg:from-black lg:via-black/10 lg:to-transparent"
-        />
       </div>
     </div>
   )
 }
 
-export default SignupPage
+export default LoginPage
