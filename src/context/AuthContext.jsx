@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AuthContext } from '../hooks/useAuth'
 import {
@@ -19,9 +20,9 @@ export function AuthProvider({ children }) {
 
   const user = data ?? null
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['user'] })
-  }
+  }, [queryClient])
 
   const login = useMutation({
     mutationFn: loginRequest,
@@ -41,9 +42,10 @@ export function AuthProvider({ children }) {
     },
   })
 
-  return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, isLoading, login, register, logout, refreshUser }),
+    [user, isLoading, login, register, logout, refreshUser],
   )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

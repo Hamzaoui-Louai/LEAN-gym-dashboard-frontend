@@ -37,3 +37,9 @@ export async function me() {
   const response = await api.get('/api/user')
   return response.data
 }
+
+export async function resendVerificationEmail() {
+  await withCsrf()
+  const response = await api.post('/email/verification-notification')
+  return response.data
+}
