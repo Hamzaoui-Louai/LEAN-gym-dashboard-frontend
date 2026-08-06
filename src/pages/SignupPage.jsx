@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import TransitionLink from '../components/TransitionLink'
 import GlowBackground from '../components/GlowBackground'
+import { usePageTransition } from '../hooks/usePageTransition'
+import { useAuth } from '../hooks/useAuth'
 import signupSidePicture from '../assets/signup-side-picture.webp'
 
 const providerButtonClass =
@@ -8,6 +10,39 @@ const providerButtonClass =
 
 function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordConfirmation, setPasswordConfirmation] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [formError, setFormError] = useState(null)
+  const { register } = useAuth()
+  const { start } = usePageTransition()
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setFormError(null)
+    setFieldErrors({})
+
+    try {
+      await register.mutateAsync({
+        name,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+      })
+      start('/dashboard')
+    } catch (error) {
+      const errors = error?.response?.data?.errors
+      if (errors) {
+        setFieldErrors(errors)
+      } else {
+        setFormError('Unable to create your account. Please try again.')
+      }
+    }
+  }
+
+  const field = (id) => (fieldErrors[id] ? fieldErrors[id][0] : null)
 
   return (
     <div className="grid min-h-screen bg-black lg:grid-cols-12">
@@ -38,11 +73,30 @@ function SignupPage() {
               dashboard. No credit card required.
             </p>
 
-            <form
-              className="mt-10 max-w-xl"
-              onSubmit={(event) => event.preventDefault()}
-            >
+            <form className="mt-10 max-w-xl" onSubmit={handleSubmit}>
               <div>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-white/70"
+                >
+                  Full name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Jane Doe"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
+                />
+                {field('name') && (
+                  <p className="mt-1 text-xs text-red-400">{field('name')}</p>
+                )}
+              </div>
+
+              <div className="mt-5">
                 <label
                   htmlFor="email"
                   className="block text-sm font-medium text-white/70"
@@ -55,8 +109,13 @@ function SignupPage() {
                   type="text"
                   autoComplete="email"
                   placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
                 />
+                {field('email') && (
+                  <p className="mt-1 text-xs text-red-400">{field('email')}</p>
+                )}
               </div>
 
               <div className="mt-5">
@@ -73,6 +132,8 @@ function SignupPage() {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     placeholder="At least 8 characters"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
                   />
                   <button
@@ -104,13 +165,47 @@ function SignupPage() {
                     </svg>
                   </button>
                 </div>
+                {field('password') && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {field('password')}
+                  </p>
+                )}
               </div>
+
+              <div className="mt-5">
+                <label
+                  htmlFor="password_confirmation"
+                  className="block text-sm font-medium text-white/70"
+                >
+                  Confirm password
+                </label>
+                <input
+                  id="password_confirmation"
+                  name="password_confirmation"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Repeat your password"
+                  value={passwordConfirmation}
+                  onChange={(event) => setPasswordConfirmation(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
+                />
+                {field('password_confirmation') && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {field('password_confirmation')}
+                  </p>
+                )}
+              </div>
+
+              {formError && (
+                <p className="mt-4 text-sm text-red-400">{formError}</p>
+              )}
 
               <button
                 type="submit"
-                className="mt-8 w-full rounded-full bg-lime-400 py-3.5 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300"
+                disabled={register.isPending}
+                className="mt-8 w-full rounded-full bg-lime-400 py-3.5 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300 disabled:opacity-60"
               >
-                Create account
+                {register.isPending ? 'Creating account…' : 'Create account'}
               </button>
             </form>
 

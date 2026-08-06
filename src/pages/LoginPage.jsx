@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import TransitionLink from '../components/TransitionLink'
 import GlowBackground from '../components/GlowBackground'
+import { usePageTransition } from '../hooks/usePageTransition'
+import { useAuth } from '../hooks/useAuth'
 import loginSidePicture from '../assets/login-side-picture.webp'
 
 const providerButtonClass =
@@ -8,6 +10,30 @@ const providerButtonClass =
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [formError, setFormError] = useState(null)
+  const { login } = useAuth()
+  const { start } = usePageTransition()
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setFormError(null)
+    setFieldErrors({})
+
+    try {
+      await login.mutateAsync({ email, password })
+      start('/dashboard')
+    } catch (error) {
+      const errors = error?.response?.data?.errors
+      if (errors) {
+        setFieldErrors(errors)
+      } else {
+        setFormError('Unable to log in. Please try again.')
+      }
+    }
+  }
 
   return (
     <div className="grid min-h-screen bg-black lg:grid-cols-12">
@@ -49,10 +75,7 @@ function LoginPage() {
               Access your dashboard and keep running your gym in one place.
             </p>
 
-            <form
-              className="mt-10 max-w-xl"
-              onSubmit={(event) => event.preventDefault()}
-            >
+            <form className="mt-10 max-w-xl" onSubmit={handleSubmit}>
               <div>
                 <label
                   htmlFor="email"
@@ -66,8 +89,15 @@ function LoginPage() {
                   type="text"
                   autoComplete="email"
                   placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
                 />
+                {fieldErrors.email && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {fieldErrors.email[0]}
+                  </p>
+                )}
               </div>
 
               <div className="mt-5">
@@ -84,6 +114,8 @@ function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     placeholder="Your password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
                   />
                   <button
@@ -115,13 +147,23 @@ function LoginPage() {
                     </svg>
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {fieldErrors.password[0]}
+                  </p>
+                )}
               </div>
+
+              {formError && (
+                <p className="mt-4 text-sm text-red-400">{formError}</p>
+              )}
 
               <button
                 type="submit"
-                className="mt-8 w-full rounded-full bg-lime-400 py-3.5 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300"
+                disabled={login.isPending}
+                className="mt-8 w-full rounded-full bg-lime-400 py-3.5 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300 disabled:opacity-60"
               >
-                Log in
+                {login.isPending ? 'Logging in…' : 'Log in'}
               </button>
             </form>
 
