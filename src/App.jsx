@@ -3,12 +3,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { PageTransitionProvider } from './components/PageTransition'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
+import DashboardLayout from './components/DashboardLayout'
 import LandingPage from './pages/LandingPage'
 import SignupPage from './pages/SignupPage'
 import LoginPage from './pages/LoginPage'
 import EmailVerificationPage from './pages/EmailVerificationPage'
-import DashboardPage from './pages/DashboardPage'
 import NotFoundPage from './pages/NotFoundPage'
+import { DASHBOARD_PAGES } from './lib/dashboardPages'
+
+const DashboardIndexPage = DASHBOARD_PAGES[0].component
 
 function VerifiedRoute({ children }) {
   const { user, isLoading } = useAuth()
@@ -122,10 +125,21 @@ function App() {
               path="/dashboard"
               element={
                 <VerifiedRoute>
-                  <DashboardPage />
+                  <DashboardLayout />
                 </VerifiedRoute>
               }
-            />
+            >
+              <Route index element={<DashboardIndexPage />} />
+              {DASHBOARD_PAGES.filter(
+                (page) => page.path !== '/dashboard',
+              ).map((page) => (
+                <Route
+                  key={page.path}
+                  path={page.path.replace('/dashboard/', '')}
+                  element={<page.component />}
+                />
+              ))}
+            </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </PageTransitionProvider>
