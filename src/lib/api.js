@@ -1,45 +1,66 @@
 import axios from 'axios'
 
+const TOKEN_KEY = 'auth_token'
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
-  withXSRFToken: true,
   headers: { Accept: 'application/json' },
 })
 
-async function withCsrf() {
-  await api.get('/sanctum/csrf-cookie')
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && localStorage.getItem(TOKEN_KEY)) {
+      localStorage.removeItem(TOKEN_KEY)
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  },
+)
+
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY)
 }
 
-export async function fetchCsrf() {
-  return api.get('/sanctum/csrf-cookie')
+export function setToken(token) {
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY)
 }
 
 export async function login(credentials) {
-  await withCsrf()
-  const response = await api.post('/login', credentials)
-  return response.data
+  const { data } = await api.post('/api/login', credentials)
+  setToken(data.access_token)
+  return data
 }
 
 export async function register(payload) {
-  await withCsrf()
-  const response = await api.post('/register', payload)
-  return response.data
+  const { data } = await api.post('/api/register', payload)
+  setToken(data.access_token)
+  return data
 }
 
 export async function logout() {
-  await withCsrf()
-  const response = await api.post('/logout')
-  return response.data
+  await api.post('/api/logout')
+  clearToken()
 }
 
 export async function me() {
-  const response = await api.get('/api/user')
-  return response.data
+  const { data } = await api.get('/api/user')
+  return data
 }
 
 export async function resendVerificationEmail() {
-  await withCsrf()
-  const response = await api.post('/email/verification-notification')
-  return response.data
+  const { data } = await api.post('/api/email/verification-notification')
+  return data
 }
