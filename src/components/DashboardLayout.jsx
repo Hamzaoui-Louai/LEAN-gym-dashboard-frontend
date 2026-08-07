@@ -166,15 +166,13 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
-function animateScroll(from, to, duration, onDone) {
+function animateEased(duration, onFrame) {
   const startTime = performance.now()
   const step = (now) => {
     const progress = Math.min((now - startTime) / duration, 1)
-    window.scrollTo(0, from + (to - from) * easeInOutCubic(progress))
+    onFrame(progress)
     if (progress < 1) {
       requestAnimationFrame(step)
-    } else {
-      onDone?.()
     }
   }
   requestAnimationFrame(step)
@@ -278,8 +276,21 @@ function DashboardLayout() {
   const location = useLocation()
   const contentRef = useRef(null)
   const stagedRef = useRef(null)
+  const shellRef = useRef(null)
+  const trackRef = useRef(null)
   const initialScrollRef = useRef(0)
   const transitioningRef = useRef(false)
+  const animatingRef = useRef(false)
+  const navigateRef = useRef(navigate)
+  const locationRef = useRef(location.pathname)
+
+  useEffect(() => {
+    navigateRef.current = navigate
+  }, [navigate])
+
+  useEffect(() => {
+    locationRef.current = location.pathname
+  }, [location.pathname])
 
   useEffect(() => {
     if (!transition) return
@@ -294,33 +305,62 @@ function DashboardLayout() {
 
   useLayoutEffect(() => {
     if (!transition) return
+    if (animatingRef.current) return
+    animatingRef.current = true
     const contentEl = contentRef.current
     const stagedEl = stagedRef.current
-    if (!contentEl || !stagedEl) return
+    const shellEl = shellRef.current
+    const trackEl = trackRef.current
+    if (!contentEl || !stagedEl || !shellEl || !trackEl) return
 
     const contentHeight = contentEl.offsetHeight
     const stagedHeight = stagedEl.offsetHeight
+    const contentTop = shellEl.getBoundingClientRect().top + window.scrollY
+
+    shellEl.style.overflow = 'hidden'
+    shellEl.style.height = `${contentHeight + stagedHeight}px`
+    trackEl.style.willChange = 'transform'
+
+    const startOffset = transition.direction === 'up' ? -stagedHeight : 0
+    const endOffset = transition.direction === 'up' ? 0 : -contentHeight
+
+    trackEl.style.transform = `translateY(${startOffset}px)`
+    window.scrollTo(0, initialScrollRef.current)
+
+    const finalize = () => {
+      const maxScroll = contentTop + stagedHeight - window.innerHeight
+      window.scrollTo(0, Math.min(window.scrollY, Math.max(0, maxScroll)))
+      contentEl.style.visibility = ''
+      flushSync(() => setTransition(null))
+      shellEl.style.overflow = ''
+      shellEl.style.height = ''
+      trackEl.style.transform = ''
+      trackEl.style.willChange = ''
+      transitioningRef.current = false
+      animatingRef.current = false
+    }
 
     const finish = () => {
-      try {
-        flushSync(() => navigate(transition.target))
-        window.scrollTo(0, 0)
-      } finally {
-        setTransition(null)
-        transitioningRef.current = false
+      contentEl.style.visibility = 'hidden'
+      navigateRef.current(transition.target)
+      const waitForCommit = (framesLeft) => {
+        if (locationRef.current === transition.target || framesLeft <= 0) {
+          finalize()
+          return
+        }
+        requestAnimationFrame(() => waitForCommit(framesLeft - 1))
       }
+      waitForCommit(120)
     }
 
-    if (transition.direction === 'down') {
-      const contentBottom =
-        contentEl.getBoundingClientRect().top + window.scrollY + contentHeight
-      animateScroll(initialScrollRef.current, contentBottom, SCROLL_MS, finish)
-    } else {
-      const correctedStart = initialScrollRef.current + stagedHeight
-      window.scrollTo(0, correctedStart)
-      animateScroll(correctedStart, 0, SCROLL_MS, finish)
-    }
-  }, [transition, navigate])
+    animateEased(SCROLL_MS, (progress) => {
+      const eased = easeInOutCubic(progress)
+      trackEl.style.transform = `translateY(${
+        startOffset + (endOffset - startOffset) * eased
+      }px)`
+      if (progress === 1) finish()
+    })
+  }, [transition])
 
   const handleNavClick = (event, targetPath) => {
     const targetIndex = PAGE_INDEX[targetPath]
@@ -399,15 +439,28 @@ function DashboardLayout() {
 
         <main className="relative min-h-screen">
           <GlowBackground className="absolute inset-0" />
-          {transition?.direction === 'up' && (
-            <StagedPage component={transition.component} innerRef={stagedRef} />
-          )}
-          <div ref={contentRef} className="relative px-6 py-8 sm:px-8 lg:px-10">
-            <Outlet />
+          <div ref={shellRef} className="relative">
+            <div ref={trackRef}>
+              {transition?.direction === 'up' && (
+                <StagedPage
+                  component={transition.component}
+                  innerRef={stagedRef}
+                />
+              )}
+              <div
+                ref={contentRef}
+                className="relative px-6 py-8 sm:px-8 lg:px-10"
+              >
+                <Outlet />
+              </div>
+              {transition?.direction === 'down' && (
+                <StagedPage
+                  component={transition.component}
+                  innerRef={stagedRef}
+                />
+              )}
+            </div>
           </div>
-          {transition?.direction === 'down' && (
-            <StagedPage component={transition.component} innerRef={stagedRef} />
-          )}
         </main>
       </div>
     </div>
