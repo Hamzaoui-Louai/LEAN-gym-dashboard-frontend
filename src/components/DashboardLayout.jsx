@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import GlowBackground from './GlowBackground'
+import DashboardBackground from './DashboardBackground'
 import { useAuth } from '../hooks/useAuth'
 import { usePageTransition } from '../hooks/usePageTransition'
+import { BackgroundProvider } from '../context/BackgroundContext'
 import { DASHBOARD_PAGES } from '../lib/dashboardPages'
 
 const iconClass = 'h-[18px] w-[18px] shrink-0'
@@ -393,10 +394,12 @@ function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-white/10 bg-black/80 backdrop-blur lg:block">
-        <SidebarContent onNavClick={handleNav} />
-      </aside>
+    <BackgroundProvider>
+      <div className="min-h-screen bg-black">
+        <DashboardBackground />
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-white/10 bg-black/80 backdrop-blur lg:block">
+          <SidebarContent onNavClick={handleNav} />
+        </aside>
 
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -410,7 +413,7 @@ function DashboardLayout() {
         </div>
       )}
 
-      <div className="lg:pl-64">
+      <div className="relative z-10 lg:pl-64">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur lg:hidden">
           <span className="text-lg font-black tracking-tight text-lime-400">
             LEAN
@@ -438,7 +441,6 @@ function DashboardLayout() {
         </header>
 
         <main className="relative min-h-screen">
-          <GlowBackground className="absolute inset-0" />
           <div ref={shellRef} className="relative">
             <div ref={trackRef}>
               {transition?.direction === 'up' && (
@@ -462,8 +464,9 @@ function DashboardLayout() {
             </div>
           </div>
         </main>
+        </div>
       </div>
-    </div>
+    </BackgroundProvider>
   )
 }
 

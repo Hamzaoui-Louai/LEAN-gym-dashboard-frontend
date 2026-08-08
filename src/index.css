@@ -5,6 +5,11 @@
   --animate-glow: glow 3s ease-in-out infinite;
   --animate-fade-out: fade-out 0.3s ease-in both;
   --animate-panel-sweep: panel-sweep 3.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+  --animate-rain-fall: rain-fall 2s linear infinite;
+  --animate-drift-slow: drift-slow 16s ease-in-out infinite alternate;
+  --animate-drift-slower: drift-slower 20s ease-in-out infinite alternate;
+  --animate-drift-slowest: drift-slowest 24s ease-in-out infinite alternate;
+  --animate-ripple-grow: ripple-grow 3s ease-out infinite;
 
   @keyframes fade-up {
     from {
@@ -35,6 +40,53 @@
       box-shadow: 0 0 24px 4px rgb(163 230 53 / 0.3);
     }
   }
+
+  @keyframes rain-fall {
+    0% {
+      transform: translate3d(0, -20vh, 0);
+    }
+    100% {
+      transform: translate3d(0, 120vh, 0);
+    }
+  }
+
+  @keyframes drift-slow {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(240px, -180px, 0) scale(1.2);
+    }
+  }
+
+  @keyframes drift-slower {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(-280px, 200px, 0) scale(0.88);
+    }
+  }
+
+  @keyframes drift-slowest {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(200px, 240px, 0) scale(1.22);
+    }
+  }
+
+  @keyframes ripple-grow {
+    0% {
+      transform: scale(0.15);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
 }
 
 @keyframes panel-sweep {
@@ -59,7 +111,12 @@
   .animate-fade-up,
   .animate-fade-out,
   .animate-glow,
-  .animate-panel-sweep {
+  .animate-panel-sweep,
+  .animate-rain-fall,
+  .animate-drift-slow,
+  .animate-drift-slower,
+  .animate-drift-slowest,
+  .animate-ripple-grow {
     animation: none;
   }
 }
