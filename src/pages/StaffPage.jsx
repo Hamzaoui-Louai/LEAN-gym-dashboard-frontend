@@ -4,17 +4,20 @@ import StaffTable from '../components/staff/StaffTable'
 import StaffFormModal from '../components/staff/StaffFormModal'
 import StaffDetailsModal from '../components/staff/StaffDetailsModal'
 import PayslipModal from '../components/staff/PayslipModal'
+import Pagination from '../components/Pagination'
 import { PaymentBadge } from '../components/members/MemberBadges'
 import { formatDate, formatMoney } from '../lib/format'
 import { MOCK_STAFF } from '../lib/staff'
 
-const PAYSLIP_PREVIEW_COUNT = 8
+const PAYSLIP_PAGE_SIZE = 15
+const PAGE_SIZE = 15
 
 function StaffPage() {
   const [staff, setStaff] = useState(MOCK_STAFF)
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState(false)
-  const [payslipsExpanded, setPayslipsExpanded] = useState(false)
+  const [page, setPage] = useState(1)
+  const [payslipPage, setPayslipPage] = useState(1)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingStaff, setEditingStaff] = useState(null)
   const [viewingStaff, setViewingStaff] = useState(null)
@@ -32,7 +35,7 @@ function StaffPage() {
     const observer = new ResizeObserver(check)
     observer.observe(area)
     return () => observer.disconnect()
-  }, [expanded, staff.length])
+  }, [expanded, staff.length, page])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -42,6 +45,17 @@ function StaffPage() {
         .some((field) => String(field).toLowerCase().includes(q)),
     )
   }, [staff, query])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const displayed = expanded
+    ? filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+    : filtered
+
+  const toggleExpanded = () => {
+    setExpanded((current) => !current)
+    setPage(1)
+  }
 
   const payslips = useMemo(() => {
     return staff
@@ -63,9 +77,15 @@ function StaffPage() {
     [payslips],
   )
 
-  const visiblePayslips = payslipsExpanded
-    ? payslips
-    : payslips.slice(0, PAYSLIP_PREVIEW_COUNT)
+  const payslipTotalPages = Math.max(
+    1,
+    Math.ceil(payslips.length / PAYSLIP_PAGE_SIZE),
+  )
+  const safePayslipPage = Math.min(payslipPage, payslipTotalPages)
+  const visiblePayslips = payslips.slice(
+    (safePayslipPage - 1) * PAYSLIP_PAGE_SIZE,
+    safePayslipPage * PAYSLIP_PAGE_SIZE,
+  )
 
   const handleAdd = (person) => {
     const id = nextIdRef.current
@@ -118,7 +138,10 @@ function StaffPage() {
           <input
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setPage(1)
+            }}
             placeholder="Search by name, email, phone or role…"
             aria-label="Search staff"
             className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
@@ -155,21 +178,40 @@ function StaffPage() {
           {!isEmpty && (
             <button
               type="button"
-              onClick={() => setExpanded((current) => !current)}
+              onClick={toggleExpanded}
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
+              {expanded ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-3.5 w-3.5"
+                >
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                  <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                  <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                  <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-3.5 w-3.5"
+                >
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                  <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                  <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                </svg>
+              )}
               {expanded ? 'Collapse' : 'Expand'}
             </button>
           )}
@@ -220,7 +262,7 @@ function StaffPage() {
             </div>
           ) : (
             <StaffTable
-              staff={filtered}
+              staff={displayed}
               onView={setViewingStaff}
               onEdit={setEditingStaff}
               onPayslip={setPayslipFor}
@@ -235,11 +277,21 @@ function StaffPage() {
           )}
         </div>
 
+        {expanded && totalPages > 1 && (
+          <div className="flex shrink-0 items-center justify-center border-t border-white/10 px-6 py-3">
+            <Pagination
+              page={safePage}
+              totalPages={totalPages}
+              onChange={setPage}
+            />
+          </div>
+        )}
+
         {!isEmpty && filtered.length > 0 && (
           <div className="flex shrink-0 items-center justify-center border-t border-white/10 px-6 py-3">
             <button
               type="button"
-              onClick={() => setExpanded((current) => !current)}
+              onClick={toggleExpanded}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/50 transition hover:text-white"
             >
               <svg
@@ -303,29 +355,13 @@ function StaffPage() {
           </ul>
         )}
 
-        {payslips.length > PAYSLIP_PREVIEW_COUNT && (
+        {payslipTotalPages > 1 && (
           <div className="flex items-center justify-center border-t border-white/10 px-6 py-3">
-            <button
-              type="button"
-              onClick={() => setPayslipsExpanded((current) => !current)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/50 transition hover:text-white"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className={`h-3.5 w-3.5 transition-transform ${payslipsExpanded ? 'rotate-180' : ''}`}
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-              {payslipsExpanded
-                ? 'Collapse'
-                : `Show all ${payslips.length} payslips`}
-            </button>
+            <Pagination
+              page={safePayslipPage}
+              totalPages={payslipTotalPages}
+              onChange={setPayslipPage}
+            />
           </div>
         )}
       </div>

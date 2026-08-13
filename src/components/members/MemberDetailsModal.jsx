@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react'
 import MembersModal from './MembersModal'
 import MemberAvatar from './MemberAvatar'
 import { MembershipBadge, PaymentBadge } from './MemberBadges'
+import Pagination from '../Pagination'
 import { formatDate, formatMoney } from '../../lib/format'
+
+const PAGE_SIZE = 15
 
 const inputClass =
   'w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20 [color-scheme:dark]'
@@ -11,6 +14,7 @@ function MemberDetailsContent({ member, onClose, onEdit }) {
   const [historyOpen, setHistoryOpen] = useState(true)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [page, setPage] = useState(1)
 
   const payments = useMemo(() => {
     return member.payments
@@ -18,6 +22,13 @@ function MemberDetailsContent({ member, onClose, onEdit }) {
       .filter((payment) => (to ? payment.date <= to : true))
       .sort((a, b) => b.date.localeCompare(a.date))
   }, [member, from, to])
+
+  const totalPages = Math.max(1, Math.ceil(payments.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const displayedPayments = payments.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  )
 
   const endsLabel =
     member.status === 'expired'
@@ -109,7 +120,10 @@ function MemberDetailsContent({ member, onClose, onEdit }) {
                   <input
                     type="date"
                     value={from}
-                    onChange={(event) => setFrom(event.target.value)}
+                    onChange={(event) => {
+                      setFrom(event.target.value)
+                      setPage(1)
+                    }}
                     className={`mt-1.5 ${inputClass}`}
                   />
                 </label>
@@ -120,7 +134,10 @@ function MemberDetailsContent({ member, onClose, onEdit }) {
                   <input
                     type="date"
                     value={to}
-                    onChange={(event) => setTo(event.target.value)}
+                    onChange={(event) => {
+                      setTo(event.target.value)
+                      setPage(1)
+                    }}
                     className={`mt-1.5 ${inputClass}`}
                   />
                 </label>
@@ -130,6 +147,7 @@ function MemberDetailsContent({ member, onClose, onEdit }) {
                     onClick={() => {
                       setFrom('')
                       setTo('')
+                      setPage(1)
                     }}
                     className="rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
                   >
@@ -145,29 +163,40 @@ function MemberDetailsContent({ member, onClose, onEdit }) {
                     : 'No payments in this date range.'}
                 </p>
               ) : (
-                <ul className="mt-4 divide-y divide-white/5">
-                  {payments.map((payment) => (
-                    <li
-                      key={payment.id}
-                      className="flex items-center justify-between gap-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-white">
-                          {formatDate(payment.date)}
-                        </p>
-                        <p className="truncate text-xs text-white/40">
-                          {payment.plan} · {payment.method}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-sm font-semibold text-white">
-                          {formatMoney(payment.amount)}
-                        </span>
-                        <PaymentBadge status={payment.status} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="mt-4 divide-y divide-white/5">
+                    {displayedPayments.map((payment) => (
+                      <li
+                        key={payment.id}
+                        className="flex items-center justify-between gap-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white">
+                            {formatDate(payment.date)}
+                          </p>
+                          <p className="truncate text-xs text-white/40">
+                            {payment.plan} · {payment.method}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className="text-sm font-semibold text-white">
+                            {formatMoney(payment.amount)}
+                          </span>
+                          <PaymentBadge status={payment.status} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  {totalPages > 1 && (
+                    <div className="mt-4 flex justify-center border-t border-white/10 pt-4">
+                      <Pagination
+                        page={safePage}
+                        totalPages={totalPages}
+                        onChange={setPage}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

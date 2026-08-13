@@ -3,12 +3,16 @@ import PageHeader from '../components/PageHeader'
 import MembersTable from '../components/members/MembersTable'
 import MemberFormModal from '../components/members/MemberFormModal'
 import MemberDetailsModal from '../components/members/MemberDetailsModal'
+import Pagination from '../components/Pagination'
 import { MOCK_MEMBERS } from '../lib/members'
+
+const PAGE_SIZE = 15
 
 function MembersPage() {
   const [members, setMembers] = useState(MOCK_MEMBERS)
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState(false)
+  const [page, setPage] = useState(1)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
   const [viewingMember, setViewingMember] = useState(null)
@@ -25,7 +29,7 @@ function MembersPage() {
     const observer = new ResizeObserver(check)
     observer.observe(area)
     return () => observer.disconnect()
-  }, [expanded, members.length])
+  }, [expanded, members.length, page])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -35,6 +39,17 @@ function MembersPage() {
         .some((field) => String(field).toLowerCase().includes(q)),
     )
   }, [members, query])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const displayed = expanded
+    ? filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+    : filtered
+
+  const toggleExpanded = () => {
+    setExpanded((current) => !current)
+    setPage(1)
+  }
 
   const handleAdd = (member) => {
     const id = nextIdRef.current
@@ -81,7 +96,10 @@ function MembersPage() {
           <input
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setPage(1)
+            }}
             placeholder="Search by name, email, phone or plan…"
             aria-label="Search members"
             className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
@@ -118,7 +136,7 @@ function MembersPage() {
           {!isEmpty && (
             <button
               type="button"
-              onClick={() => setExpanded((current) => !current)}
+              onClick={toggleExpanded}
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
             >
               {expanded ? (
@@ -206,7 +224,7 @@ function MembersPage() {
             </div>
           ) : (
             <MembersTable
-              members={filtered}
+              members={displayed}
               onView={setViewingMember}
               onEdit={setEditingMember}
             />
@@ -220,11 +238,21 @@ function MembersPage() {
           )}
         </div>
 
+        {expanded && totalPages > 1 && (
+          <div className="flex shrink-0 items-center justify-center border-t border-white/10 px-6 py-3">
+            <Pagination
+              page={safePage}
+              totalPages={totalPages}
+              onChange={setPage}
+            />
+          </div>
+        )}
+
         {!isEmpty && filtered.length > 0 && (
           <div className="flex shrink-0 items-center justify-center border-t border-white/10 px-6 py-3">
             <button
               type="button"
-              onClick={() => setExpanded((current) => !current)}
+              onClick={toggleExpanded}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/50 transition hover:text-white"
             >
               <svg

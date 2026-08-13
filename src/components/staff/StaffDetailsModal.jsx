@@ -3,7 +3,10 @@ import MembersModal from '../members/MembersModal'
 import MemberAvatar from '../members/MemberAvatar'
 import { PaymentBadge } from '../members/MemberBadges'
 import { StaffStatusBadge } from './StaffBadges'
+import Pagination from '../Pagination'
 import { formatDate, formatMoney } from '../../lib/format'
+
+const PAGE_SIZE = 15
 
 const inputClass =
   'w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20 [color-scheme:dark]'
@@ -12,6 +15,7 @@ function StaffDetailsContent({ person, onClose, onEdit, onPayslip }) {
   const [historyOpen, setHistoryOpen] = useState(true)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [page, setPage] = useState(1)
 
   const payslips = useMemo(() => {
     return person.payslips
@@ -19,6 +23,13 @@ function StaffDetailsContent({ person, onClose, onEdit, onPayslip }) {
       .filter((payslip) => (to ? payslip.date <= to : true))
       .sort((a, b) => b.date.localeCompare(a.date))
   }, [person, from, to])
+
+  const totalPages = Math.max(1, Math.ceil(payslips.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const displayedPayslips = payslips.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  )
 
   const hasFilters = Boolean(from || to)
 
@@ -106,7 +117,10 @@ function StaffDetailsContent({ person, onClose, onEdit, onPayslip }) {
                   <input
                     type="date"
                     value={from}
-                    onChange={(event) => setFrom(event.target.value)}
+                    onChange={(event) => {
+                      setFrom(event.target.value)
+                      setPage(1)
+                    }}
                     className={`mt-1.5 ${inputClass}`}
                   />
                 </label>
@@ -117,7 +131,10 @@ function StaffDetailsContent({ person, onClose, onEdit, onPayslip }) {
                   <input
                     type="date"
                     value={to}
-                    onChange={(event) => setTo(event.target.value)}
+                    onChange={(event) => {
+                      setTo(event.target.value)
+                      setPage(1)
+                    }}
                     className={`mt-1.5 ${inputClass}`}
                   />
                 </label>
@@ -127,6 +144,7 @@ function StaffDetailsContent({ person, onClose, onEdit, onPayslip }) {
                     onClick={() => {
                       setFrom('')
                       setTo('')
+                      setPage(1)
                     }}
                     className="rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
                   >
@@ -142,29 +160,40 @@ function StaffDetailsContent({ person, onClose, onEdit, onPayslip }) {
                     : 'No payslips in this date range.'}
                 </p>
               ) : (
-                <ul className="mt-4 divide-y divide-white/5">
-                  {payslips.map((payslip) => (
-                    <li
-                      key={payslip.id}
-                      className="flex items-center justify-between gap-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-white">
-                          {payslip.period}
-                        </p>
-                        <p className="truncate text-xs text-white/40">
-                          {formatDate(payslip.date)} · {payslip.method}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-sm font-semibold text-white">
-                          {formatMoney(payslip.amount)}
-                        </span>
-                        <PaymentBadge status={payslip.status} />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="mt-4 divide-y divide-white/5">
+                    {displayedPayslips.map((payslip) => (
+                      <li
+                        key={payslip.id}
+                        className="flex items-center justify-between gap-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white">
+                            {payslip.period}
+                          </p>
+                          <p className="truncate text-xs text-white/40">
+                            {formatDate(payslip.date)} · {payslip.method}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className="text-sm font-semibold text-white">
+                            {formatMoney(payslip.amount)}
+                          </span>
+                          <PaymentBadge status={payslip.status} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  {totalPages > 1 && (
+                    <div className="mt-4 flex justify-center border-t border-white/10 pt-4">
+                      <Pagination
+                        page={safePage}
+                        totalPages={totalPages}
+                        onChange={setPage}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
