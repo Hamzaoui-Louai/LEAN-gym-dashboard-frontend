@@ -6,162 +6,14 @@ import { useAuth } from '../hooks/useAuth'
 import { usePageTransition } from '../hooks/usePageTransition'
 import { BackgroundProvider } from '../context/BackgroundContext'
 import { DASHBOARD_PAGES } from '../lib/dashboardPages'
+import { ICONS, iconClass } from './DashboardIcons'
+import { DashboardNavProvider } from '../context/DashboardNavContext'
 
-const iconClass = 'h-[18px] w-[18px] shrink-0'
 const SCROLL_MS = 700
 
 const PAGE_INDEX = Object.fromEntries(
   DASHBOARD_PAGES.map((page, index) => [page.path, index]),
 )
-
-const ICONS = {
-  '/dashboard': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7" height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
-    </svg>
-  ),
-  '/dashboard/members': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  ),
-  '/dashboard/staff': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <rect width="20" height="14" x="2" y="7" rx="2" />
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-    </svg>
-  ),
-  '/dashboard/equipment': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <path d="M7 6v12" />
-      <path d="M17 6v12" />
-      <path d="M5 9v6" />
-      <path d="M19 9v6" />
-      <path d="M7 12h10" />
-    </svg>
-  ),
-  '/dashboard/check-ins': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <path d="M8 2v4" />
-      <path d="M16 2v4" />
-      <rect width="18" height="18" x="3" y="4" rx="2" />
-      <path d="M3 10h18" />
-      <path d="m9 16 2 2 4-4" />
-    </svg>
-  ),
-  '/dashboard/subscriptions': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <rect width="20" height="14" x="2" y="5" rx="2" />
-      <path d="M2 10h20" />
-    </svg>
-  ),
-  '/dashboard/finances': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-      <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-      <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-    </svg>
-  ),
-  '/dashboard/gym-profile': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <rect width="16" height="20" x="4" y="2" rx="2" />
-      <path d="M9 22v-4h6v4" />
-      <path d="M8 6h.01" />
-      <path d="M16 6h.01" />
-      <path d="M12 6h.01" />
-      <path d="M12 10h.01" />
-      <path d="M12 14h.01" />
-      <path d="M16 10h.01" />
-      <path d="M16 14h.01" />
-      <path d="M8 10h.01" />
-      <path d="M8 14h.01" />
-    </svg>
-  ),
-  '/dashboard/settings': (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={iconClass}
-    >
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  ),
-}
 
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
@@ -441,7 +293,8 @@ function DashboardLayout() {
         </header>
 
         <main className="relative min-h-screen">
-          <div ref={shellRef} className="relative">
+          <DashboardNavProvider navigateTo={handleNavClick}>
+            <div ref={shellRef} className="relative">
             <div ref={trackRef}>
               {transition?.direction === 'up' && (
                 <StagedPage
@@ -462,7 +315,8 @@ function DashboardLayout() {
                 />
               )}
             </div>
-          </div>
+            </div>
+          </DashboardNavProvider>
         </main>
         </div>
       </div>
