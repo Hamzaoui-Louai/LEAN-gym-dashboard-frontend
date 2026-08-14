@@ -5,9 +5,11 @@ import DashboardBackground from './DashboardBackground'
 import { useAuth } from '../hooks/useAuth'
 import { usePageTransition } from '../hooks/usePageTransition'
 import { BackgroundProvider } from '../context/BackgroundContext'
+import { DataSourceProvider } from '../context/DataSourceContext'
 import { DASHBOARD_PAGES } from '../lib/dashboardPages'
 import { ICONS, iconClass } from './DashboardIcons'
 import { DashboardNavProvider } from '../context/DashboardNavContext'
+import DataSourceToggle from './DataSourceToggle'
 
 const SCROLL_MS = 700
 
@@ -247,7 +249,8 @@ function DashboardLayout() {
 
   return (
     <BackgroundProvider>
-      <div className="min-h-screen bg-black">
+      <DataSourceProvider>
+        <div className="min-h-screen bg-black">
         <DashboardBackground />
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-white/10 bg-black/80 backdrop-blur lg:block">
           <SidebarContent onNavClick={handleNav} />
@@ -306,6 +309,9 @@ function DashboardLayout() {
                 ref={contentRef}
                 className="relative px-6 py-8 sm:px-8 lg:px-10"
               >
+                <div className="mb-6 flex items-center justify-end">
+                  <DataSourceToggle />
+                </div>
                 <Outlet />
               </div>
               {transition?.direction === 'down' && (
@@ -320,6 +326,7 @@ function DashboardLayout() {
         </main>
         </div>
       </div>
+      </DataSourceProvider>
     </BackgroundProvider>
   )
 }

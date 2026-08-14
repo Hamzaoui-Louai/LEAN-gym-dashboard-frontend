@@ -5,6 +5,8 @@ import ImageUploader from '../components/ImageUploader'
 import { DASHBOARD_BACKGROUNDS } from '../lib/dashboardBackgrounds'
 import { useBackground } from '../hooks/useBackground'
 import { useAuth } from '../hooks/useAuth'
+import { useDataSource } from '../hooks/useDataSource'
+import { dashboardApi } from '../lib/dashboardApi'
 import { formatDate, formatMoney } from '../lib/format'
 
 const VISIBLE_ON_LOAD = 3
@@ -193,7 +195,8 @@ function DeviceIcon({ session }) {
 }
 
 function SettingsPage() {
-  const { user } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
+  const { isLive } = useDataSource()
   const { backgroundId, setBackgroundId } = useBackground()
   const [expanded, setExpanded] = useState(false)
 
@@ -232,12 +235,18 @@ function SettingsPage() {
     ? DASHBOARD_BACKGROUNDS
     : DASHBOARD_BACKGROUNDS.slice(0, VISIBLE_ON_LOAD)
 
-  const handleAccountSave = () => {
+  const handleAccountSave = async () => {
+    if (isLive) {
+      await dashboardApi.user
+        .update({ name: account.name, email: account.email })
+        .catch(() => null)
+      await refreshUser()
+    }
     setAccountSaved(true)
     window.setTimeout(() => setAccountSaved(false), 2500)
   }
 
-  const handlePasswordSave = () => {
+  const handlePasswordSave = async () => {
     if (!password.current) {
       setPasswordError('Enter your current password.')
       return
@@ -250,13 +259,27 @@ function SettingsPage() {
       setPasswordError('New password and confirmation do not match.')
       return
     }
+    if (isLive) {
+      await dashboardApi.user
+        .password({
+          current_password: password.current,
+          password: password.next,
+          password_confirmation: password.confirm,
+        })
+        .catch(() => null)
+    }
     setPasswordError(null)
     setPasswordSaved(true)
     setPassword({ current: '', next: '', confirm: '' })
     window.setTimeout(() => setPasswordSaved(false), 2500)
   }
 
-  const handleConfirmAction = (action) => {
+  const handleConfirmAction = async (action) => {
+    if (action === 'delete' && isLive) {
+      await dashboardApi.user.remove().catch(() => null)
+      logout()
+      return
+    }
     setNotice(
       action === 'delete'
         ? 'Delete requested — this is demo data, nothing changed.'

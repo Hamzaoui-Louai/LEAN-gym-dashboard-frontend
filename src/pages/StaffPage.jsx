@@ -8,12 +8,19 @@ import Pagination from '../components/Pagination'
 import { PaymentBadge } from '../components/members/MemberBadges'
 import { formatDate, formatMoney } from '../lib/format'
 import { MOCK_STAFF } from '../lib/staff'
+import { dashboardApi } from '../lib/dashboardApi'
+import { useSourceData } from '../hooks/useSourceData'
 
 const PAYSLIP_PAGE_SIZE = 15
 const PAGE_SIZE = 15
 
 function StaffPage() {
-  const [staff, setStaff] = useState(MOCK_STAFF)
+  const { data: staff, setData: setStaff, isLive, refetch } = useSourceData({
+    queryKey: ['staff'],
+    queryFn: dashboardApi.staff.list,
+    mockData: MOCK_STAFF,
+    emptyValue: [],
+  })
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState(false)
   const [page, setPage] = useState(1)
@@ -87,20 +94,36 @@ function StaffPage() {
     safePayslipPage * PAYSLIP_PAGE_SIZE,
   )
 
-  const handleAdd = (person) => {
+  const handleAdd = async (person) => {
+    if (isLive) {
+      await dashboardApi.staff.create(person).catch(() => null)
+      await refetch()
+      return
+    }
     const id = nextIdRef.current
     nextIdRef.current += 1
     setStaff((current) => [...current, { ...person, id }])
   }
 
-  const handleEdit = (person) => {
+  const handleEdit = async (person) => {
+    if (isLive) {
+      await dashboardApi.staff.update(person).catch(() => null)
+      await refetch()
+      return
+    }
     setStaff((current) =>
       current.map((item) => (item.id === person.id ? person : item)),
     )
   }
 
-  const handleAddPayslip = (payslip) => {
+  const handleAddPayslip = async (payslip) => {
     if (!payslipFor) return
+    if (isLive) {
+      await dashboardApi.staff.addPayslip(payslipFor.id, payslip).catch(() => null)
+      await refetch()
+      setPayslipFor(null)
+      return
+    }
     setStaff((current) =>
       current.map((person) =>
         person.id === payslipFor.id

@@ -5,6 +5,8 @@ import CheckinPanel from '../components/checkins/CheckinPanel'
 import CheckinsHistoryModal from '../components/checkins/CheckinsHistoryModal'
 import { MOCK_MEMBERS } from '../lib/members'
 import { currentTime, MOCK_CHECKINS, TODAY } from '../lib/checkins'
+import { dashboardApi } from '../lib/dashboardApi'
+import { useSourceData } from '../hooks/useSourceData'
 
 function StatCard({ label, value, subtitle, icon }) {
   return (
@@ -24,7 +26,18 @@ function StatCard({ label, value, subtitle, icon }) {
 const iconClass = 'h-4 w-4'
 
 function CheckInsPage() {
-  const [checkins, setCheckins] = useState(MOCK_CHECKINS)
+  const { data: checkins, setData: setCheckins, isLive, refetch } = useSourceData({
+    queryKey: ['checkins'],
+    queryFn: dashboardApi.checkins.list,
+    mockData: MOCK_CHECKINS,
+    emptyValue: [],
+  })
+  const { data: members } = useSourceData({
+    queryKey: ['members'],
+    queryFn: dashboardApi.members.list,
+    mockData: MOCK_MEMBERS,
+    emptyValue: [],
+  })
   const [selectedId, setSelectedId] = useState(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const nextIdRef = useRef(MOCK_CHECKINS.length + 1)
@@ -45,8 +58,8 @@ function CheckInsPage() {
   )
 
   const selectedMember = useMemo(
-    () => MOCK_MEMBERS.find((member) => member.id === selectedId) ?? null,
-    [selectedId],
+    () => members.find((member) => member.id === selectedId) ?? null,
+    [members, selectedId],
   )
 
   const selectedVisits = useMemo(() => {
@@ -56,8 +69,13 @@ function CheckInsPage() {
       .sort((a, b) => (b.date + b.check_in).localeCompare(a.date + a.check_in))
   }, [checkins, selectedId])
 
-  const handleCheckIn = () => {
+  const handleCheckIn = async () => {
     if (!selectedMember) return
+    if (isLive) {
+      await dashboardApi.checkins.checkIn(selectedMember.id).catch(() => null)
+      await refetch()
+      return
+    }
     const id = nextIdRef.current
     nextIdRef.current += 1
     setCheckins((current) => [
@@ -72,8 +90,20 @@ function CheckInsPage() {
     ])
   }
 
-  const handleCheckOut = () => {
+  const handleCheckOut = async () => {
     if (!selectedMember) return
+    if (isLive) {
+      const openVisit = checkins.find(
+        (visit) =>
+          visit.member_id === selectedMember.id &&
+          visit.date === TODAY &&
+          visit.check_out === null,
+      )
+      if (!openVisit) return
+      await dashboardApi.checkins.checkOut(openVisit.id).catch(() => null)
+      await refetch()
+      return
+    }
     setCheckins((current) =>
       current.map((visit) =>
         visit.member_id === selectedMember.id &&
@@ -98,7 +128,7 @@ function CheckInsPage() {
         <StatCard
           label="Currently inside"
           value={insideIds.size}
-          subtitle={`${insideIds.size} of ${MOCK_MEMBERS.length} members`}
+          subtitle={`${insideIds.size} of ${members.length} members`}
           icon={
             <svg
               viewBox="0 0 24 24"
@@ -144,11 +174,11 @@ function CheckInsPage() {
           <div className="border-b border-white/10 px-5 py-4">
             <h2 className="text-sm font-bold text-white">Members</h2>
             <p className="mt-0.5 text-xs text-white/40">
-              {MOCK_MEMBERS.length} members · {insideIds.size} inside now
+              {members.length} members · {insideIds.size} inside now
             </p>
           </div>
           <CheckinsList
-            members={MOCK_MEMBERS}
+            members={members}
             insideIds={insideIds}
             selectedId={selectedId}
             onSelect={setSelectedId}

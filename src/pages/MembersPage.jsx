@@ -5,11 +5,18 @@ import MemberFormModal from '../components/members/MemberFormModal'
 import MemberDetailsModal from '../components/members/MemberDetailsModal'
 import Pagination from '../components/Pagination'
 import { MOCK_MEMBERS } from '../lib/members'
+import { dashboardApi } from '../lib/dashboardApi'
+import { useSourceData } from '../hooks/useSourceData'
 
 const PAGE_SIZE = 15
 
 function MembersPage() {
-  const [members, setMembers] = useState(MOCK_MEMBERS)
+  const { data: members, setData: setMembers, isLive, refetch } = useSourceData({
+    queryKey: ['members'],
+    queryFn: dashboardApi.members.list,
+    mockData: MOCK_MEMBERS,
+    emptyValue: [],
+  })
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState(false)
   const [page, setPage] = useState(1)
@@ -51,13 +58,23 @@ function MembersPage() {
     setPage(1)
   }
 
-  const handleAdd = (member) => {
+  const handleAdd = async (member) => {
+    if (isLive) {
+      await dashboardApi.members.create(member).catch(() => null)
+      await refetch()
+      return
+    }
     const id = nextIdRef.current
     nextIdRef.current += 1
     setMembers((current) => [...current, { ...member, id }])
   }
 
-  const handleEdit = (member) => {
+  const handleEdit = async (member) => {
+    if (isLive) {
+      await dashboardApi.members.update(member).catch(() => null)
+      await refetch()
+      return
+    }
     setMembers((current) =>
       current.map((item) => (item.id === member.id ? member : item)),
     )

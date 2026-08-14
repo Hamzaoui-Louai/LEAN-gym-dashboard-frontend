@@ -152,8 +152,27 @@ export function rosterByTypeDetails() {
   })
 }
 
+export function rosterByTypeDetailsFor(members) {
+  return MEMBERSHIP_TYPES.map((plan) => {
+    const roster = members.filter((member) => member.membership.plan === plan)
+    const averageRevenue = roster.length
+      ? Math.round(
+          roster.reduce((sum, member) => sum + member.membership.price, 0) / roster.length,
+        )
+      : 0
+    return { plan, count: roster.length, averageRevenue }
+  })
+}
+
 export function rosterStatusCounts() {
   return MOCK_MEMBERS.reduce((counts, member) => {
+    counts[member.status] = (counts[member.status] ?? 0) + 1
+    return counts
+  }, {})
+}
+
+export function rosterStatusCountsFor(members) {
+  return members.reduce((counts, member) => {
     counts[member.status] = (counts[member.status] ?? 0) + 1
     return counts
   }, {})

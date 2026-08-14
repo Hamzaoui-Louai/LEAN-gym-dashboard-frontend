@@ -18,9 +18,14 @@ import {
   netIncomeFor,
   PERIODS,
   rosterByTypeDetails,
+  rosterByTypeDetailsFor,
   rosterStatusCounts,
+  rosterStatusCountsFor,
   totalExpenses,
 } from '../lib/finances'
+import { MOCK_MEMBERS } from '../lib/members'
+import { dashboardApi } from '../lib/dashboardApi'
+import { useSourceData } from '../hooks/useSourceData'
 
 const money = (value) => formatMoney(value).replace(/\.00$/, '')
 
@@ -81,8 +86,37 @@ function DonutLegend({ rows, format }) {
 function FinancesPage() {
   const [periodId, setPeriodId] = useState(DEFAULT_PERIOD_ID)
 
+  const { data: financeMonths, isLive } = useSourceData({
+    queryKey: ['finances'],
+    queryFn: dashboardApi.finances.overview,
+    mockData: MOCK_FINANCE_MONTHS,
+    emptyValue: [],
+  })
+  const { data: members } = useSourceData({
+    queryKey: ['members'],
+    queryFn: dashboardApi.members.list,
+    mockData: MOCK_MEMBERS,
+    emptyValue: [],
+  })
+
   const period = PERIODS.find((p) => p.id === periodId)
-  const months = MOCK_FINANCE_MONTHS.slice(-period.months)
+  const sourceMonths = isLive ? financeMonths : MOCK_FINANCE_MONTHS
+
+  if (isLive && sourceMonths.length === 0) {
+    return (
+      <div className="flex flex-col">
+        <PageHeader
+          title="Finances"
+          description="Revenue, expenses, memberships and profit overview."
+        />
+        <p className="mt-10 text-center text-sm text-white/40">
+          Live finance data unavailable.
+        </p>
+      </div>
+    )
+  }
+
+  const months = sourceMonths.slice(-period.months)
   const window = aggregateMonths(months)
   const latest = months[months.length - 1]
   const previous = months.length > 1 ? months[months.length - 2] : latest
@@ -134,11 +168,11 @@ function FinancesPage() {
 
   const subsTotal = Math.max(window.new_subscriptions + window.renewals, 1)
 
-  const roster = rosterByTypeDetails()
+  const roster = isLive ? rosterByTypeDetailsFor(members) : rosterByTypeDetails()
   const rosterDonut = roster
     .filter((row) => row.count > 0)
     .map((row) => ({ label: row.plan, value: row.count, color: MEMBERSHIP_COLORS[row.plan] }))
-  const statusCounts = rosterStatusCounts()
+  const statusCounts = isLive ? rosterStatusCountsFor(members) : rosterStatusCounts()
   const activeCount = statusCounts.active ?? 0
   const frozenCount = statusCounts.frozen ?? 0
   const expiredCount = statusCounts.expired ?? 0

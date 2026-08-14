@@ -7,11 +7,13 @@ import BarChart from '../components/charts/BarChart'
 import Legend from '../components/charts/Legend'
 import { useAuth } from '../hooks/useAuth'
 import { useDashboardNav } from '../hooks/useDashboardNav'
+import { useSourceData } from '../hooks/useSourceData'
 import { formatMoney, formatDate } from '../lib/format'
 import { MOCK_MEMBERS } from '../lib/members'
 import { MOCK_STAFF } from '../lib/staff'
 import { MOCK_EQUIPMENT, MOCK_REPAIRS } from '../lib/equipment'
 import { MOCK_CHECKINS, TODAY } from '../lib/checkins'
+import { dashboardApi } from '../lib/dashboardApi'
 import {
   MEMBERSHIP_COLORS,
   MEMBERSHIP_TYPES,
@@ -30,87 +32,117 @@ const TONES = {
   amber: 'text-amber-400',
 }
 
-function daysUntil(dateStr) {
-  if (!dateStr) return Infinity
-  return Math.ceil((new Date(`${dateStr}T00:00:00`) - new Date(`${TODAY}T00:00:00`)) / 86400000)
+function isoDaysFromNow(days) {
+  const date = new Date(`${TODAY}T00:00:00`)
+  date.setDate(date.getDate() + days)
+  return date.toISOString().slice(0, 10)
 }
 
-const TOTAL_MEMBERS = MOCK_MEMBERS.length
-const ACTIVE_MEMBERS = MOCK_MEMBERS.filter((member) => member.status === 'active').length
-const EXPIRED_MEMBERS = MOCK_MEMBERS.filter((member) => member.status === 'expired').length
-const EXPIRING_MEMBERSHIPS = MOCK_MEMBERS.filter((member) => {
-  const days = daysUntil(member.membership.ends_at)
-  return days >= 0 && days <= 30
-}).length
+const EXPIRING_MIN = TODAY
+const EXPIRING_MAX = isoDaysFromNow(30)
 
-const TOTAL_STAFF = MOCK_STAFF.length
-const ACTIVE_STAFF = MOCK_STAFF.filter((staff) => staff.status === 'active').length
-const MONTHLY_PAYROLL = MOCK_STAFF.filter((staff) => staff.status === 'active').reduce(
-  (sum, staff) => sum + staff.salary,
-  0,
-)
+function computeDashboardStats({ members, staff, equipment, repairs, checkins, financeMonths }) {
+  const activeMembers = members.filter((member) => member.status === 'active').length
+  const expiredMembers = members.filter((member) => member.status === 'expired').length
+  const expiringMemberships = members.filter((member) => {
+    const ends = member.membership?.ends_at
+    return ends && ends >= EXPIRING_MIN && ends <= EXPIRING_MAX
+  }).length
 
-const TOTAL_EQUIPMENT = MOCK_EQUIPMENT.length
-const AVAILABLE_EQUIPMENT = MOCK_EQUIPMENT.filter(
-  (equipment) => equipment.state === 'operational' || equipment.state === 'in_use',
-).length
-const MAINTENANCE_EQUIPMENT = MOCK_EQUIPMENT.filter(
-  (equipment) => equipment.state === 'under_repair',
-).length
-const BROKEN_EQUIPMENT = MOCK_EQUIPMENT.filter(
-  (equipment) => equipment.state === 'out_of_order',
-).length
+  const activeStaff = staff.filter((person) => person.status === 'active').length
+  const monthlyPayroll = staff
+    .filter((person) => person.status === 'active')
+    .reduce((sum, person) => sum + person.salary, 0)
 
-const TODAY_CHECKINS = MOCK_CHECKINS.filter((visit) => visit.date === TODAY).length
-const INSIDE_NOW = MOCK_CHECKINS.filter(
-  (visit) => visit.date === TODAY && visit.check_out === null,
-).length
+  const availableEquipment = equipment.filter(
+    (item) => item.state === 'operational' || item.state === 'in_use',
+  ).length
+  const maintenanceEquipment = equipment.filter((item) => item.state === 'under_repair').length
+  const brokenEquipment = equipment.filter((item) => item.state === 'out_of_order').length
 
-const MEMBER_BY_ID = Object.fromEntries(MOCK_MEMBERS.map((member) => [member.id, member]))
-const RECENT_CHECKINS = MOCK_CHECKINS.slice(0, 5).map((visit) => ({
-  member: MEMBER_BY_ID[visit.member_id],
-  visit,
-}))
+  const todayCheckins = checkins.filter((visit) => visit.date === TODAY).length
+  const insideNow = checkins.filter(
+    (visit) => visit.date === TODAY && visit.check_out === null,
+  ).length
 
-const RECENT_PAYSLIPS = MOCK_STAFF.flatMap((staff) =>
-  staff.payslips.map((payslip) => ({ ...payslip, name: staff.name })),
-)
-  .sort((a, b) => b.date.localeCompare(a.date))
-  .slice(0, 5)
+  const memberById = Object.fromEntries(members.map((member) => [member.id, member]))
+  const recentCheckins = checkins
+    .slice(0, 5)
+    .map((visit) => ({ member: memberById[visit.member_id], visit }))
+    .filter((row) => row.member)
 
-const RECENT_REPAIRS = MOCK_REPAIRS.slice(0, 5)
+  const recentPayslips = staff
+    .flatMap((person) =>
+      (person.payslips ?? []).map((payslip) => ({ ...payslip, name: person.name })),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5)
 
-const LATEST_MONTH = MOCK_FINANCE_MONTHS[MOCK_FINANCE_MONTHS.length - 1]
-const PREVIOUS_MONTH = MOCK_FINANCE_MONTHS[MOCK_FINANCE_MONTHS.length - 2]
-const MONTH_REVENUE = LATEST_MONTH.revenue
-const AVG_MONTHLY_REVENUE = Math.round(
-  MOCK_FINANCE_MONTHS.reduce((sum, month) => sum + month.revenue, 0) /
-    MOCK_FINANCE_MONTHS.length,
-)
-const REVENUE_GROWTH = PREVIOUS_MONTH.revenue
-  ? ((MONTH_REVENUE - PREVIOUS_MONTH.revenue) / PREVIOUS_MONTH.revenue) * 100
-  : 0
-const MONTH_EXPENSES = totalExpenses(LATEST_MONTH.expenses)
-const MONTH_NET = netIncomeFor(LATEST_MONTH)
-const NET_MARGIN = MONTH_REVENUE ? (MONTH_NET / MONTH_REVENUE) * 100 : 0
+  const recentRepairs = repairs.slice(0, 5)
 
-const MEMBERSHIP_REVENUE = MEMBERSHIP_TYPES.map((plan) => ({
-  plan,
-  value: LATEST_MONTH.memberships[plan],
-  color: MEMBERSHIP_COLORS[plan],
-}))
+  const latest = financeMonths[financeMonths.length - 1]
+  const previous = financeMonths.length > 1 ? financeMonths[financeMonths.length - 2] : latest
+  const monthRevenue = latest?.revenue ?? 0
+  const previousRevenue = previous?.revenue ?? 0
+  const avgMonthlyRevenue = financeMonths.length
+    ? Math.round(
+        financeMonths.reduce((sum, month) => sum + month.revenue, 0) /
+          financeMonths.length,
+      )
+    : 0
+  const revenueGrowth = previousRevenue
+    ? ((monthRevenue - previousRevenue) / previousRevenue) * 100
+    : 0
+  const monthExpenses = latest ? totalExpenses(latest.expenses) : 0
+  const monthNet = latest ? netIncomeFor(latest) : 0
+  const netMargin = monthRevenue ? (monthNet / monthRevenue) * 100 : 0
 
-const ROSTER_DONUT = MEMBERSHIP_TYPES.map((plan) => ({
-  label: plan,
-  value: MOCK_MEMBERS.filter((member) => member.membership.plan === plan).length,
-  color: MEMBERSHIP_COLORS[plan],
-})).filter((row) => row.value > 0)
+  const membershipRevenue = MEMBERSHIP_TYPES.map((plan) => ({
+    plan,
+    value: latest?.memberships[plan] ?? 0,
+    color: MEMBERSHIP_COLORS[plan],
+  }))
 
-const REV_EXP_DATA = MOCK_FINANCE_MONTHS.slice(-6).map((month) => ({
-  label: month.label,
-  revenue: month.revenue,
-  expenses: totalExpenses(month.expenses),
-}))
+  const rosterDonut = MEMBERSHIP_TYPES.map((plan) => ({
+    label: plan,
+    value: members.filter((member) => member.membership?.plan === plan).length,
+    color: MEMBERSHIP_COLORS[plan],
+  })).filter((row) => row.value > 0)
+
+  const revExpData = financeMonths.slice(-6).map((month) => ({
+    label: month.label,
+    revenue: month.revenue,
+    expenses: totalExpenses(month.expenses),
+  }))
+
+  return {
+    totalMembers: members.length,
+    activeMembers,
+    expiringMemberships,
+    expiredMembers,
+    totalStaff: staff.length,
+    activeStaff,
+    monthlyPayroll,
+    totalEquipment: equipment.length,
+    availableEquipment,
+    maintenanceEquipment,
+    brokenEquipment,
+    todayCheckins,
+    insideNow,
+    recentCheckins,
+    recentPayslips,
+    recentRepairs,
+    monthRevenue,
+    avgMonthlyRevenue,
+    revenueGrowth,
+    monthExpenses,
+    monthNet,
+    netMargin,
+    membershipRevenue,
+    rosterDonut,
+    revExpData,
+  }
+}
 
 const QUICK_LINKS = [
   { path: '/dashboard/members', label: 'Members', icon: ICONS['/dashboard/members'] },
@@ -193,6 +225,52 @@ function DashboardPage() {
   const { user } = useAuth()
   const { navigateTo } = useDashboardNav()
 
+  const members = useSourceData({
+    queryKey: ['members'],
+    queryFn: dashboardApi.members.list,
+    mockData: MOCK_MEMBERS,
+    emptyValue: [],
+  }).data
+  const staff = useSourceData({
+    queryKey: ['staff'],
+    queryFn: dashboardApi.staff.list,
+    mockData: MOCK_STAFF,
+    emptyValue: [],
+  }).data
+  const equipment = useSourceData({
+    queryKey: ['equipment'],
+    queryFn: dashboardApi.equipment.list,
+    mockData: MOCK_EQUIPMENT,
+    emptyValue: [],
+  }).data
+  const repairs = useSourceData({
+    queryKey: ['equipment-repairs'],
+    queryFn: dashboardApi.equipment.repairs,
+    mockData: MOCK_REPAIRS,
+    emptyValue: [],
+  }).data
+  const checkins = useSourceData({
+    queryKey: ['checkins'],
+    queryFn: dashboardApi.checkins.list,
+    mockData: MOCK_CHECKINS,
+    emptyValue: [],
+  }).data
+  const financeMonths = useSourceData({
+    queryKey: ['finances'],
+    queryFn: dashboardApi.finances.overview,
+    mockData: MOCK_FINANCE_MONTHS,
+    emptyValue: [],
+  }).data
+
+  const stats = computeDashboardStats({
+    members,
+    staff,
+    equipment,
+    repairs,
+    checkins,
+    financeMonths,
+  })
+
   return (
     <div className="flex flex-col">
       <PageHeader
@@ -202,17 +280,17 @@ function DashboardPage() {
 
       <SectionHeader title="Overview" subtitle="At a glance" />
       <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
-        <Tile label="Total members" value={TOTAL_MEMBERS} />
-        <Tile label="Active members" value={ACTIVE_MEMBERS} tone="lime" />
+        <Tile label="Total members" value={stats.totalMembers} />
+        <Tile label="Active members" value={stats.activeMembers} tone="lime" />
         <Tile
           label="Expiring memberships"
-          value={EXPIRING_MEMBERSHIPS}
+          value={stats.expiringMemberships}
           tone="amber"
           sub="next 30 days"
         />
-        <Tile label="Total staff" value={TOTAL_STAFF} sub={`${ACTIVE_STAFF} active`} />
-        <Tile label="Total equipment" value={TOTAL_EQUIPMENT} tone="sky" />
-        <Tile label="Today's check-ins" value={TODAY_CHECKINS} tone="lime" sub={`${INSIDE_NOW} inside now`} />
+        <Tile label="Total staff" value={stats.totalStaff} sub={`${stats.activeStaff} active`} />
+        <Tile label="Total equipment" value={stats.totalEquipment} tone="sky" />
+        <Tile label="Today's check-ins" value={stats.todayCheckins} tone="lime" sub={`${stats.insideNow} inside now`} />
       </div>
 
       <SectionHeader title="Insights" subtitle="Revenue, memberships and attendance" />
@@ -222,47 +300,47 @@ function DashboardPage() {
             <div>
               <p className="text-xs text-white/40">Revenue this month</p>
               <p className="mt-1 text-3xl font-black tracking-tight text-lime-400">
-                {money(MONTH_REVENUE)}
+                {money(stats.monthRevenue)}
               </p>
             </div>
             <span
               className={`rounded-full px-3 py-1 text-xs font-bold ${
-                REVENUE_GROWTH >= 0 ? 'bg-lime-400/10 text-lime-400' : 'bg-rose-400/10 text-rose-400'
+                stats.revenueGrowth >= 0 ? 'bg-lime-400/10 text-lime-400' : 'bg-rose-400/10 text-rose-400'
               }`}
             >
-              {REVENUE_GROWTH >= 0 ? '↑' : '↓'} {Math.abs(REVENUE_GROWTH).toFixed(1)}% vs last month
+              {stats.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(stats.revenueGrowth).toFixed(1)}% vs last month
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-xs text-white/40">
             <span>Monthly average</span>
-            <span className="font-semibold text-white/70">{money(AVG_MONTHLY_REVENUE)}</span>
+            <span className="font-semibold text-white/70">{money(stats.avgMonthlyRevenue)}</span>
           </div>
           <div className="my-4 h-px bg-white/10" />
           <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">
             Revenue by membership type
           </p>
-          <ShareList rows={MEMBERSHIP_REVENUE} format={money} />
+          <ShareList rows={stats.membershipRevenue} format={money} />
         </Panel>
 
         <Panel title="Membership overview" subtitle="Current roster">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-2xl font-black text-lime-400">{ACTIVE_MEMBERS}</p>
+              <p className="text-2xl font-black text-lime-400">{stats.activeMembers}</p>
               <p className="mt-1 text-[11px] text-white/40">Active</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-2xl font-black text-amber-400">{EXPIRING_MEMBERSHIPS}</p>
+              <p className="text-2xl font-black text-amber-400">{stats.expiringMemberships}</p>
               <p className="mt-1 text-[11px] text-white/40">Expiring</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-2xl font-black text-rose-400">{EXPIRED_MEMBERS}</p>
+              <p className="text-2xl font-black text-rose-400">{stats.expiredMembers}</p>
               <p className="mt-1 text-[11px] text-white/40">Expired</p>
             </div>
           </div>
           <div className="mt-5 flex items-center gap-4">
-            <DonutChart data={ROSTER_DONUT} size={104} strokeWidth={12} />
+            <DonutChart data={stats.rosterDonut} size={104} strokeWidth={12} />
             <ul className="flex-1 space-y-1.5">
-              {ROSTER_DONUT.map((row) => (
+              {stats.rosterDonut.map((row) => (
                 <li key={row.label} className="flex items-center justify-between gap-2 text-xs">
                   <span className="inline-flex items-center gap-1.5 text-white/60">
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: row.color }} />
@@ -277,14 +355,14 @@ function DashboardPage() {
 
         <Panel title="Check-in overview" subtitle="Today">
           <div className="grid grid-cols-2 gap-3">
-            <Tile label="Today's check-ins" value={TODAY_CHECKINS} />
-            <Tile label="Current attendance" value={INSIDE_NOW} tone="lime" sub="inside now" />
+            <Tile label="Today's check-ins" value={stats.todayCheckins} />
+            <Tile label="Current attendance" value={stats.insideNow} tone="lime" sub="inside now" />
           </div>
           <p className="mt-5 text-[11px] font-semibold uppercase tracking-widest text-white/40">
             Recent check-ins
           </p>
           <ul className="mt-1 divide-y divide-white/5">
-            {RECENT_CHECKINS.map(({ member, visit }) => (
+            {stats.recentCheckins.map(({ member, visit }) => (
               <li key={visit.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <Avatar name={member.name} />
@@ -310,14 +388,14 @@ function DashboardPage() {
       <div className="mt-3 grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Panel title="Staff overview" subtitle="Payroll and recent payslips">
           <div className="grid grid-cols-2 gap-3">
-            <Tile label="Total staff" value={TOTAL_STAFF} sub={`${ACTIVE_STAFF} active`} />
-            <Tile label="Monthly payroll" value={money(MONTHLY_PAYROLL)} tone="lime" />
+            <Tile label="Total staff" value={stats.totalStaff} sub={`${stats.activeStaff} active`} />
+            <Tile label="Monthly payroll" value={money(stats.monthlyPayroll)} tone="lime" />
           </div>
           <p className="mt-5 text-[11px] font-semibold uppercase tracking-widest text-white/40">
             Recent payslips
           </p>
           <ul className="mt-1 divide-y divide-white/5">
-            {RECENT_PAYSLIPS.map((row) => (
+            {stats.recentPayslips.map((row) => (
               <li key={row.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-white">{row.name}</p>
@@ -334,16 +412,16 @@ function DashboardPage() {
 
         <Panel title="Equipment overview" subtitle="Fleet status and recent repairs">
           <div className="grid grid-cols-2 gap-3">
-            <Tile label="Total equipment" value={TOTAL_EQUIPMENT} />
-            <Tile label="Available" value={AVAILABLE_EQUIPMENT} tone="lime" />
-            <Tile label="Under maintenance" value={MAINTENANCE_EQUIPMENT} tone="amber" />
-            <Tile label="Broken" value={BROKEN_EQUIPMENT} tone="rose" />
+            <Tile label="Total equipment" value={stats.totalEquipment} />
+            <Tile label="Available" value={stats.availableEquipment} tone="lime" />
+            <Tile label="Under maintenance" value={stats.maintenanceEquipment} tone="amber" />
+            <Tile label="Broken" value={stats.brokenEquipment} tone="rose" />
           </div>
           <p className="mt-5 text-[11px] font-semibold uppercase tracking-widest text-white/40">
             Recent repairs
           </p>
           <ul className="mt-1 divide-y divide-white/5">
-            {RECENT_REPAIRS.map((row) => (
+            {stats.recentRepairs.map((row) => (
               <li key={row.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-white">{row.equipment}</p>
@@ -366,23 +444,23 @@ function DashboardPage() {
             <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
               <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs text-white/40">Revenue</p>
-                <p className="mt-1 text-2xl font-black text-lime-400">{money(MONTH_REVENUE)}</p>
+                <p className="mt-1 text-2xl font-black text-lime-400">{money(stats.monthRevenue)}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs text-white/40">Expenses</p>
-                <p className="mt-1 text-2xl font-black text-rose-400">{money(MONTH_EXPENSES)}</p>
+                <p className="mt-1 text-2xl font-black text-rose-400">{money(stats.monthExpenses)}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs text-white/40">Net income</p>
-                <p className={`mt-1 text-2xl font-black ${MONTH_NET >= 0 ? 'text-lime-400' : 'text-rose-400'}`}>
-                  {money(MONTH_NET)}
+                <p className={`mt-1 text-2xl font-black ${stats.monthNet >= 0 ? 'text-lime-400' : 'text-rose-400'}`}>
+                  {money(stats.monthNet)}
                 </p>
-                <p className="mt-1 text-xs text-white/40">{NET_MARGIN.toFixed(1)}% margin</p>
+                <p className="mt-1 text-xs text-white/40">{stats.netMargin.toFixed(1)}% margin</p>
               </div>
             </div>
             <div className="lg:col-span-2">
               <BarChart
-                data={REV_EXP_DATA}
+                data={stats.revExpData}
                 series={[
                   { key: 'revenue', color: '#a3e635' },
                   { key: 'expenses', color: '#fb7185' },

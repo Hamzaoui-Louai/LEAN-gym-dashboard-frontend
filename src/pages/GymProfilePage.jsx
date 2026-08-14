@@ -7,89 +7,93 @@ import { formatDays, MOCK_GYM } from '../lib/gym'
 import { MOCK_MEMBERS } from '../lib/members'
 import { MOCK_STAFF } from '../lib/staff'
 import { MOCK_EQUIPMENT } from '../lib/equipment'
+import { dashboardApi } from '../lib/dashboardApi'
+import { useSourceData } from '../hooks/useSourceData'
 
 const iconClass = 'h-4 w-4'
 
-const STATS = [
-  {
-    label: 'Total members',
-    value: MOCK_MEMBERS.length,
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={iconClass}
-      >
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Active members',
-    value: MOCK_MEMBERS.filter((member) => member.status === 'active').length,
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={iconClass}
-      >
-        <path d="M20 6 9 17l-5-5" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Total staff',
-    value: MOCK_STAFF.length,
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={iconClass}
-      >
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Total equipment',
-    value: MOCK_EQUIPMENT.length,
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={iconClass}
-      >
-        <path d="M7 6v12" />
-        <path d="M17 6v12" />
-        <path d="M5 9v6" />
-        <path d="M19 9v6" />
-        <path d="M7 12h10" />
-      </svg>
-    ),
-  },
-]
+function buildStats({ members, staff, equipment }) {
+  return [
+    {
+      label: 'Total members',
+      value: members.length,
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={iconClass}
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Active members',
+      value: members.filter((member) => member.status === 'active').length,
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={iconClass}
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Total staff',
+      value: staff.length,
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={iconClass}
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Total equipment',
+      value: equipment.length,
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={iconClass}
+        >
+          <path d="M7 6v12" />
+          <path d="M17 6v12" />
+          <path d="M5 9v6" />
+          <path d="M19 9v6" />
+          <path d="M7 12h10" />
+        </svg>
+      ),
+    },
+  ]
+}
 
 function InfoRow({ icon, label, value }) {
   return (
@@ -110,10 +114,55 @@ function InfoRow({ icon, label, value }) {
 }
 
 function GymProfilePage() {
-  const [gym, setGym] = useState(MOCK_GYM)
+  const { data: gym, setData: setGym, isLive, refetch } = useSourceData({
+    queryKey: ['gym'],
+    queryFn: dashboardApi.gym.get,
+    mockData: MOCK_GYM,
+    emptyValue: null,
+  })
+  const { data: members } = useSourceData({
+    queryKey: ['members'],
+    queryFn: dashboardApi.members.list,
+    mockData: MOCK_MEMBERS,
+    emptyValue: [],
+  })
+  const { data: staff } = useSourceData({
+    queryKey: ['staff'],
+    queryFn: dashboardApi.staff.list,
+    mockData: MOCK_STAFF,
+    emptyValue: [],
+  })
+  const { data: equipment } = useSourceData({
+    queryKey: ['equipment'],
+    queryFn: dashboardApi.equipment.list,
+    mockData: MOCK_EQUIPMENT,
+    emptyValue: [],
+  })
   const [isEditOpen, setIsEditOpen] = useState(false)
 
-  const handleSave = (next) => {
+  if (isLive && !gym) {
+    return (
+      <div className="flex flex-col">
+        <PageHeader
+          title="Gym Profile"
+          description="Your gym's public information, opening hours and statistics."
+        />
+        <p className="mt-10 text-center text-sm text-white/40">
+          Live gym data unavailable.
+        </p>
+      </div>
+    )
+  }
+
+  const stats = buildStats({ members, staff, equipment })
+
+  const handleSave = async (next) => {
+    if (isLive) {
+      await dashboardApi.gym.update(next).catch(() => null)
+      await refetch()
+      setIsEditOpen(false)
+      return
+    }
     setGym(next)
     setIsEditOpen(false)
   }
@@ -190,7 +239,7 @@ function GymProfilePage() {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STATS.map((stat) => (
+        {stats.map((stat) => (
           <div
             key={stat.label}
             className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"

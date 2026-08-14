@@ -12,6 +12,8 @@ import {
   MOCK_PAYMENTS,
   MOCK_REPAIRS,
 } from '../lib/equipment'
+import { dashboardApi } from '../lib/dashboardApi'
+import { useSourceData } from '../hooks/useSourceData'
 
 const PAGE_SIZE = 15
 
@@ -56,9 +58,26 @@ function HistoryList({ rows, totalPages, page, onPageChange, emptyNote }) {
 }
 
 function EquipmentPage() {
-  const [equipment, setEquipment] = useState(MOCK_EQUIPMENT)
-  const [payments, setPayments] = useState(MOCK_PAYMENTS)
-  const [repairs] = useState(MOCK_REPAIRS)
+  const { data: equipment, setData: setEquipment, isLive, refetch: refetchEquipment } =
+    useSourceData({
+      queryKey: ['equipment'],
+      queryFn: dashboardApi.equipment.list,
+      mockData: MOCK_EQUIPMENT,
+      emptyValue: [],
+    })
+  const { data: payments, setData: setPayments, refetch: refetchPayments } =
+    useSourceData({
+      queryKey: ['equipment-payments'],
+      queryFn: dashboardApi.equipment.payments,
+      mockData: MOCK_PAYMENTS,
+      emptyValue: [],
+    })
+  const { data: repairs } = useSourceData({
+    queryKey: ['equipment-repairs'],
+    queryFn: dashboardApi.equipment.repairs,
+    mockData: MOCK_REPAIRS,
+    emptyValue: [],
+  })
   const [query, setQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
   const [page, setPage] = useState(1)
@@ -129,7 +148,12 @@ function EquipmentPage() {
     [repairs],
   )
 
-  const handleAdd = (item) => {
+  const handleAdd = async (item) => {
+    if (isLive) {
+      await dashboardApi.equipment.create(item).catch(() => null)
+      await Promise.all([refetchEquipment(), refetchPayments()])
+      return
+    }
     const id = nextIdRef.current
     nextIdRef.current += 1
     setEquipment((current) => [...current, { ...item, id }])
@@ -146,7 +170,12 @@ function EquipmentPage() {
     ])
   }
 
-  const handleEdit = (item) => {
+  const handleEdit = async (item) => {
+    if (isLive) {
+      await dashboardApi.equipment.update(item).catch(() => null)
+      await refetchEquipment()
+      return
+    }
     setEquipment((current) =>
       current.map((entry) => (entry.id === item.id ? item : entry)),
     )
