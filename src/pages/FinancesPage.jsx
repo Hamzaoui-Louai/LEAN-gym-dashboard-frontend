@@ -24,6 +24,7 @@ import {
   totalExpenses,
 } from '../lib/finances'
 import { MOCK_MEMBERS } from '../lib/members'
+import DataErrorState from '../components/DataErrorState'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
 
@@ -86,7 +87,12 @@ function DonutLegend({ rows, format }) {
 function FinancesPage() {
   const [periodId, setPeriodId] = useState(DEFAULT_PERIOD_ID)
 
-  const { data: financeMonths, isLive } = useSourceData({
+  const {
+    data: financeMonths,
+    isLive,
+    isError,
+    refetch,
+  } = useSourceData({
     queryKey: ['finances'],
     queryFn: dashboardApi.finances.overview,
     mockData: MOCK_FINANCE_MONTHS,
@@ -101,6 +107,21 @@ function FinancesPage() {
 
   const period = PERIODS.find((p) => p.id === periodId)
   const sourceMonths = isLive ? financeMonths : MOCK_FINANCE_MONTHS
+
+  if (isLive && isError) {
+    return (
+      <div className="flex flex-col">
+        <PageHeader
+          title="Finances"
+          description="Revenue, expenses, memberships and profit overview."
+        />
+        <DataErrorState
+          message="Couldn't reach the API. Check that the backend is running and you're logged in."
+          onRetry={refetch}
+        />
+      </div>
+    )
+  }
 
   if (isLive && sourceMonths.length === 0) {
     return (

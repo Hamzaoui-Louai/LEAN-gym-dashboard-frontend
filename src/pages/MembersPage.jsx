@@ -4,6 +4,7 @@ import MembersTable from '../components/members/MembersTable'
 import MemberFormModal from '../components/members/MemberFormModal'
 import MemberDetailsModal from '../components/members/MemberDetailsModal'
 import Pagination from '../components/Pagination'
+import DataErrorState from '../components/DataErrorState'
 import { MOCK_MEMBERS } from '../lib/members'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
@@ -11,7 +12,13 @@ import { useSourceData } from '../hooks/useSourceData'
 const PAGE_SIZE = 15
 
 function MembersPage() {
-  const { data: members, setData: setMembers, isLive, refetch } = useSourceData({
+  const {
+    data: members,
+    setData: setMembers,
+    isLive,
+    isError,
+    refetch,
+  } = useSourceData({
     queryKey: ['members'],
     queryFn: dashboardApi.members.list,
     mockData: MOCK_MEMBERS,
@@ -198,7 +205,12 @@ function MembersPage() {
             expanded ? 'overflow-visible' : 'overflow-hidden'
           }`}
         >
-          {isEmpty ? (
+          {isLive && isError ? (
+            <DataErrorState
+              message="Couldn't reach the API. Check that the backend is running and you're logged in."
+              onRetry={refetch}
+            />
+          ) : isEmpty ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
                 <svg

@@ -5,6 +5,7 @@ import StaffFormModal from '../components/staff/StaffFormModal'
 import StaffDetailsModal from '../components/staff/StaffDetailsModal'
 import PayslipModal from '../components/staff/PayslipModal'
 import Pagination from '../components/Pagination'
+import DataErrorState from '../components/DataErrorState'
 import { PaymentBadge } from '../components/members/MemberBadges'
 import { formatDate, formatMoney } from '../lib/format'
 import { MOCK_STAFF } from '../lib/staff'
@@ -15,7 +16,13 @@ const PAYSLIP_PAGE_SIZE = 15
 const PAGE_SIZE = 15
 
 function StaffPage() {
-  const { data: staff, setData: setStaff, isLive, refetch } = useSourceData({
+  const {
+    data: staff,
+    setData: setStaff,
+    isLive,
+    isError,
+    refetch,
+  } = useSourceData({
     queryKey: ['staff'],
     queryFn: dashboardApi.staff.list,
     mockData: MOCK_STAFF,
@@ -246,7 +253,12 @@ function StaffPage() {
             expanded ? 'overflow-visible' : 'max-h-[30rem] overflow-hidden'
           }`}
         >
-          {isEmpty ? (
+          {isLive && isError ? (
+            <DataErrorState
+              message="Couldn't reach the API. Check that the backend is running and you're logged in."
+              onRetry={refetch}
+            />
+          ) : isEmpty ? (
             <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
                 <svg

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Panel from '../components/Panel'
+import DataErrorBanner from '../components/DataErrorBanner'
 import { ICONS } from '../components/DashboardIcons'
 import DonutChart from '../components/charts/DonutChart'
 import BarChart from '../components/charts/BarChart'
@@ -225,42 +226,68 @@ function DashboardPage() {
   const { user } = useAuth()
   const { navigateTo } = useDashboardNav()
 
-  const members = useSourceData({
+  const membersQuery = useSourceData({
     queryKey: ['members'],
     queryFn: dashboardApi.members.list,
     mockData: MOCK_MEMBERS,
     emptyValue: [],
-  }).data
-  const staff = useSourceData({
+  })
+  const staffQuery = useSourceData({
     queryKey: ['staff'],
     queryFn: dashboardApi.staff.list,
     mockData: MOCK_STAFF,
     emptyValue: [],
-  }).data
-  const equipment = useSourceData({
+  })
+  const equipmentQuery = useSourceData({
     queryKey: ['equipment'],
     queryFn: dashboardApi.equipment.list,
     mockData: MOCK_EQUIPMENT,
     emptyValue: [],
-  }).data
-  const repairs = useSourceData({
+  })
+  const repairsQuery = useSourceData({
     queryKey: ['equipment-repairs'],
     queryFn: dashboardApi.equipment.repairs,
     mockData: MOCK_REPAIRS,
     emptyValue: [],
-  }).data
-  const checkins = useSourceData({
+  })
+  const checkinsQuery = useSourceData({
     queryKey: ['checkins'],
     queryFn: dashboardApi.checkins.list,
     mockData: MOCK_CHECKINS,
     emptyValue: [],
-  }).data
-  const financeMonths = useSourceData({
+  })
+  const financeMonthsQuery = useSourceData({
     queryKey: ['finances'],
     queryFn: dashboardApi.finances.overview,
     mockData: MOCK_FINANCE_MONTHS,
     emptyValue: [],
-  }).data
+  })
+
+  const members = membersQuery.data
+  const staff = staffQuery.data
+  const equipment = equipmentQuery.data
+  const repairs = repairsQuery.data
+  const checkins = checkinsQuery.data
+  const financeMonths = financeMonthsQuery.data
+
+  const isLive = membersQuery.isLive
+  const loadError = [
+    membersQuery,
+    staffQuery,
+    equipmentQuery,
+    repairsQuery,
+    checkinsQuery,
+    financeMonthsQuery,
+  ].some((query) => query.isError)
+
+  const refetchAll = () => {
+    membersQuery.refetch()
+    staffQuery.refetch()
+    equipmentQuery.refetch()
+    repairsQuery.refetch()
+    checkinsQuery.refetch()
+    financeMonthsQuery.refetch()
+  }
 
   const stats = computeDashboardStats({
     members,
@@ -277,6 +304,13 @@ function DashboardPage() {
         title="Dashboard"
         description={`Welcome back, ${user?.name ?? 'there'} — here's what's happening at your gym today (${formatDate(TODAY)}).`}
       />
+
+      {isLive && loadError && (
+        <DataErrorBanner
+          message="Couldn't load some live data."
+          onRetry={refetchAll}
+        />
+      )}
 
       <SectionHeader title="Overview" subtitle="At a glance" />
       <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">

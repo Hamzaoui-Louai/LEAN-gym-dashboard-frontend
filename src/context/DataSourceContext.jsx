@@ -5,7 +5,8 @@ const STORAGE_KEY = 'data_source'
 
 function readStoredSource() {
   const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === 'api' ? 'api' : 'mock'
+  if (stored === 'api' || stored === 'mock') return stored
+  return localStorage.getItem('auth_token') ? 'api' : 'mock'
 }
 
 export function DataSourceProvider({ children }) {

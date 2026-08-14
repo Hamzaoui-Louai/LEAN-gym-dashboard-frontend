@@ -7,6 +7,7 @@ import { formatDays, MOCK_GYM } from '../lib/gym'
 import { MOCK_MEMBERS } from '../lib/members'
 import { MOCK_STAFF } from '../lib/staff'
 import { MOCK_EQUIPMENT } from '../lib/equipment'
+import DataErrorState from '../components/DataErrorState'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
 
@@ -114,7 +115,13 @@ function InfoRow({ icon, label, value }) {
 }
 
 function GymProfilePage() {
-  const { data: gym, setData: setGym, isLive, refetch } = useSourceData({
+  const {
+    data: gym,
+    setData: setGym,
+    isLive,
+    isError,
+    refetch,
+  } = useSourceData({
     queryKey: ['gym'],
     queryFn: dashboardApi.gym.get,
     mockData: MOCK_GYM,
@@ -139,6 +146,21 @@ function GymProfilePage() {
     emptyValue: [],
   })
   const [isEditOpen, setIsEditOpen] = useState(false)
+
+  if (isLive && isError) {
+    return (
+      <div className="flex flex-col">
+        <PageHeader
+          title="Gym Profile"
+          description="Your gym's public information, opening hours and statistics."
+        />
+        <DataErrorState
+          message="Couldn't reach the API. Check that the backend is running and you're logged in."
+          onRetry={refetch}
+        />
+      </div>
+    )
+  }
 
   if (isLive && !gym) {
     return (

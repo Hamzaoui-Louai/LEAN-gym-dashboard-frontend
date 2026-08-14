@@ -3,6 +3,7 @@ import PageHeader from '../components/PageHeader'
 import CheckinsList from '../components/checkins/CheckinsList'
 import CheckinPanel from '../components/checkins/CheckinPanel'
 import CheckinsHistoryModal from '../components/checkins/CheckinsHistoryModal'
+import DataErrorBanner from '../components/DataErrorBanner'
 import { MOCK_MEMBERS } from '../lib/members'
 import { currentTime, MOCK_CHECKINS, TODAY } from '../lib/checkins'
 import { dashboardApi } from '../lib/dashboardApi'
@@ -26,13 +27,23 @@ function StatCard({ label, value, subtitle, icon }) {
 const iconClass = 'h-4 w-4'
 
 function CheckInsPage() {
-  const { data: checkins, setData: setCheckins, isLive, refetch } = useSourceData({
+  const {
+    data: checkins,
+    setData: setCheckins,
+    isLive,
+    isError: checkinsError,
+    refetch,
+  } = useSourceData({
     queryKey: ['checkins'],
     queryFn: dashboardApi.checkins.list,
     mockData: MOCK_CHECKINS,
     emptyValue: [],
   })
-  const { data: members } = useSourceData({
+  const {
+    data: members,
+    isError: membersError,
+    refetch: refetchMembers,
+  } = useSourceData({
     queryKey: ['members'],
     queryFn: dashboardApi.members.list,
     mockData: MOCK_MEMBERS,
@@ -123,6 +134,16 @@ function CheckInsPage() {
         title="Check-ins"
         description="See who's in the gym right now and manage daily visits."
       />
+
+      {isLive && (checkinsError || membersError) && (
+        <DataErrorBanner
+          message="Couldn't load live check-in data."
+          onRetry={() => {
+            refetch()
+            refetchMembers()
+          }}
+        />
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard

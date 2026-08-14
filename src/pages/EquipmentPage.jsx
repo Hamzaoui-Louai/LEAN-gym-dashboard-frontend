@@ -3,6 +3,7 @@ import PageHeader from '../components/PageHeader'
 import EquipmentCard from '../components/equipment/EquipmentCard'
 import EquipmentFormModal from '../components/equipment/EquipmentFormModal'
 import Pagination from '../components/Pagination'
+import DataErrorState from '../components/DataErrorState'
 import { PaymentBadge } from '../components/members/MemberBadges'
 import { formatDate, formatMoney } from '../lib/format'
 import {
@@ -58,13 +59,18 @@ function HistoryList({ rows, totalPages, page, onPageChange, emptyNote }) {
 }
 
 function EquipmentPage() {
-  const { data: equipment, setData: setEquipment, isLive, refetch: refetchEquipment } =
-    useSourceData({
-      queryKey: ['equipment'],
-      queryFn: dashboardApi.equipment.list,
-      mockData: MOCK_EQUIPMENT,
-      emptyValue: [],
-    })
+  const {
+    data: equipment,
+    setData: setEquipment,
+    isLive,
+    isError,
+    refetch: refetchEquipment,
+  } = useSourceData({
+    queryKey: ['equipment'],
+    queryFn: dashboardApi.equipment.list,
+    mockData: MOCK_EQUIPMENT,
+    emptyValue: [],
+  })
   const { data: payments, setData: setPayments, refetch: refetchPayments } =
     useSourceData({
       queryKey: ['equipment-payments'],
@@ -278,7 +284,12 @@ function EquipmentPage() {
           </div>
         </div>
 
-        {isEmpty ? (
+        {isLive && isError ? (
+          <DataErrorState
+            message="Couldn't reach the API. Check that the backend is running and you're logged in."
+            onRetry={refetchEquipment}
+          />
+        ) : isEmpty ? (
           <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
               <svg
