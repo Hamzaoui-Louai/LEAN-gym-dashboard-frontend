@@ -11,7 +11,7 @@ import {
 export function AuthProvider({ children }) {
   const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['user'],
     queryFn: meRequest,
     retry: false,
@@ -43,8 +43,8 @@ export function AuthProvider({ children }) {
   })
 
   const value = useMemo(
-    () => ({ user, isLoading, login, register, logout, refreshUser }),
-    [user, isLoading, login, register, logout, refreshUser],
+    () => ({ user, isLoading, isError, error, login, register, logout, refreshUser }),
+    [user, isLoading, isError, error, login, register, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

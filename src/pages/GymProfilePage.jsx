@@ -8,6 +8,7 @@ import { MOCK_MEMBERS } from '../lib/members'
 import { MOCK_STAFF } from '../lib/staff'
 import { MOCK_EQUIPMENT } from '../lib/equipment'
 import DataErrorState from '../components/DataErrorState'
+import { PageSkeleton } from '../components/Skeletons'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
 
@@ -119,6 +120,7 @@ function GymProfilePage() {
     data: gym,
     setData: setGym,
     isLive,
+    isPending: gymPending,
     isError,
     refetch,
   } = useSourceData({
@@ -127,25 +129,39 @@ function GymProfilePage() {
     mockData: MOCK_GYM,
     emptyValue: null,
   })
-  const { data: members } = useSourceData({
+  const { data: members, isPending: membersPending } = useSourceData({
     queryKey: ['members'],
     queryFn: dashboardApi.members.list,
     mockData: MOCK_MEMBERS,
     emptyValue: [],
   })
-  const { data: staff } = useSourceData({
+  const { data: staff, isPending: staffPending } = useSourceData({
     queryKey: ['staff'],
     queryFn: dashboardApi.staff.list,
     mockData: MOCK_STAFF,
     emptyValue: [],
   })
-  const { data: equipment } = useSourceData({
+  const { data: equipment, isPending: equipmentPending } = useSourceData({
     queryKey: ['equipment'],
     queryFn: dashboardApi.equipment.list,
     mockData: MOCK_EQUIPMENT,
     emptyValue: [],
   })
   const [isEditOpen, setIsEditOpen] = useState(false)
+
+  if (isLive && (gymPending || membersPending || staffPending || equipmentPending)) {
+    return (
+      <div className="flex flex-col">
+        <PageHeader
+          title="Gym Profile"
+          description="Your gym's public information, opening hours and statistics."
+        />
+        <div className="mt-6">
+          <PageSkeleton />
+        </div>
+      </div>
+    )
+  }
 
   if (isLive && isError) {
     return (

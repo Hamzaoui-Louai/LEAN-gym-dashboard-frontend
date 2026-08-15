@@ -25,6 +25,7 @@ import {
 } from '../lib/finances'
 import { MOCK_MEMBERS } from '../lib/members'
 import DataErrorState from '../components/DataErrorState'
+import { PageSkeleton } from '../components/Skeletons'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
 
@@ -90,6 +91,7 @@ function FinancesPage() {
   const {
     data: financeMonths,
     isLive,
+    isPending: financePending,
     isError,
     refetch,
   } = useSourceData({
@@ -98,7 +100,7 @@ function FinancesPage() {
     mockData: MOCK_FINANCE_MONTHS,
     emptyValue: [],
   })
-  const { data: members } = useSourceData({
+  const { data: members, isPending: membersPending } = useSourceData({
     queryKey: ['members'],
     queryFn: dashboardApi.members.list,
     mockData: MOCK_MEMBERS,
@@ -107,6 +109,20 @@ function FinancesPage() {
 
   const period = PERIODS.find((p) => p.id === periodId)
   const sourceMonths = isLive ? financeMonths : MOCK_FINANCE_MONTHS
+
+  if (isLive && (financePending || membersPending)) {
+    return (
+      <div className="flex flex-col">
+        <PageHeader
+          title="Finances"
+          description="Revenue, expenses, memberships and profit overview."
+        />
+        <div className="mt-6">
+          <PageSkeleton />
+        </div>
+      </div>
+    )
+  }
 
   if (isLive && isError) {
     return (

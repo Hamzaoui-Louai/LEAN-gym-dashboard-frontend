@@ -6,6 +6,7 @@ import StaffDetailsModal from '../components/staff/StaffDetailsModal'
 import PayslipModal from '../components/staff/PayslipModal'
 import Pagination from '../components/Pagination'
 import DataErrorState from '../components/DataErrorState'
+import { TableSkeleton } from '../components/Skeletons'
 import { PaymentBadge } from '../components/members/MemberBadges'
 import { formatDate, formatMoney } from '../lib/format'
 import { MOCK_STAFF } from '../lib/staff'
@@ -20,6 +21,7 @@ function StaffPage() {
     data: staff,
     setData: setStaff,
     isLive,
+    isPending,
     isError,
     refetch,
   } = useSourceData({
@@ -253,7 +255,9 @@ function StaffPage() {
             expanded ? 'overflow-visible' : 'max-h-[30rem] overflow-hidden'
           }`}
         >
-          {isLive && isError ? (
+          {isLive && isPending ? (
+            <TableSkeleton rows={8} />
+          ) : isLive && isError ? (
             <DataErrorState
               message="Couldn't reach the API. Check that the backend is running and you're logged in."
               onRetry={refetch}
@@ -359,7 +363,9 @@ function StaffPage() {
           </div>
         </div>
 
-        {payslips.length === 0 ? (
+        {isLive && isPending ? (
+          <TableSkeleton rows={5} />
+        ) : payslips.length === 0 ? (
           <p className="px-6 py-10 text-center text-sm text-white/40">
             No payslips yet. Use the Payslip button on any staff row to write one.
           </p>

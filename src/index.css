@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html,
+body {
+  background-color: #000;
+}
+
 @theme {
   --animate-fade-up: fade-up 0.7s ease-out both;
   --animate-glow: glow 3s ease-in-out infinite;

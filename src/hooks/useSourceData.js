@@ -29,6 +29,7 @@ export function useSourceData({ queryKey, queryFn, mockData, emptyValue = [] }) 
     setData,
     isLive,
     refetch,
+    isPending: isLive && query.isPending,
     isFetching: query.isFetching,
     isError: query.isError,
   }

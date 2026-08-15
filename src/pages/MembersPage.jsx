@@ -5,6 +5,7 @@ import MemberFormModal from '../components/members/MemberFormModal'
 import MemberDetailsModal from '../components/members/MemberDetailsModal'
 import Pagination from '../components/Pagination'
 import DataErrorState from '../components/DataErrorState'
+import { TableSkeleton } from '../components/Skeletons'
 import { MOCK_MEMBERS } from '../lib/members'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
@@ -16,6 +17,7 @@ function MembersPage() {
     data: members,
     setData: setMembers,
     isLive,
+    isPending,
     isError,
     refetch,
   } = useSourceData({
@@ -205,7 +207,9 @@ function MembersPage() {
             expanded ? 'overflow-visible' : 'overflow-hidden'
           }`}
         >
-          {isLive && isError ? (
+          {isLive && isPending ? (
+            <TableSkeleton rows={8} />
+          ) : isLive && isError ? (
             <DataErrorState
               message="Couldn't reach the API. Check that the backend is running and you're logged in."
               onRetry={refetch}

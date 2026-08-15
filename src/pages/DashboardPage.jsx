@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Panel from '../components/Panel'
 import DataErrorBanner from '../components/DataErrorBanner'
+import { PageSkeleton } from '../components/Skeletons'
 import { ICONS } from '../components/DashboardIcons'
 import DonutChart from '../components/charts/DonutChart'
 import BarChart from '../components/charts/BarChart'
@@ -279,6 +280,14 @@ function DashboardPage() {
     checkinsQuery,
     financeMonthsQuery,
   ].some((query) => query.isError)
+  const anyPending = [
+    membersQuery,
+    staffQuery,
+    equipmentQuery,
+    repairsQuery,
+    checkinsQuery,
+    financeMonthsQuery,
+  ].some((query) => query.isPending)
 
   const refetchAll = () => {
     membersQuery.refetch()
@@ -312,7 +321,13 @@ function DashboardPage() {
         />
       )}
 
-      <SectionHeader title="Overview" subtitle="At a glance" />
+      {isLive && anyPending ? (
+        <div className="mt-6">
+          <PageSkeleton />
+        </div>
+      ) : (
+        <>
+          <SectionHeader title="Overview" subtitle="At a glance" />
       <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
         <Tile label="Total members" value={stats.totalMembers} />
         <Tile label="Active members" value={stats.activeMembers} tone="lime" />
@@ -513,6 +528,8 @@ function DashboardPage() {
           </div>
         </Panel>
       </div>
+        </>
+      )}
 
       <SectionHeader title="Navigation" subtitle="Jump straight to a module" />
       <div className="mt-3">

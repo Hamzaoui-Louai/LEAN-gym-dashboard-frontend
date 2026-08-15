@@ -4,6 +4,7 @@ import EquipmentCard from '../components/equipment/EquipmentCard'
 import EquipmentFormModal from '../components/equipment/EquipmentFormModal'
 import Pagination from '../components/Pagination'
 import DataErrorState from '../components/DataErrorState'
+import { CardSkeleton, TableSkeleton } from '../components/Skeletons'
 import { PaymentBadge } from '../components/members/MemberBadges'
 import { formatDate, formatMoney } from '../lib/format'
 import {
@@ -21,10 +22,12 @@ const PAGE_SIZE = 15
 const selectClass =
   'w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-4 pr-10 text-sm text-white transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20'
 
-function HistoryList({ rows, totalPages, page, onPageChange, emptyNote }) {
+function HistoryList({ rows, totalPages, page, onPageChange, emptyNote, pending }) {
   return (
     <>
-      {rows.length === 0 ? (
+      {pending ? (
+        <TableSkeleton rows={5} />
+      ) : rows.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-white/40">{emptyNote}</p>
       ) : (
         <ul className="divide-y divide-white/5">
@@ -63,6 +66,7 @@ function EquipmentPage() {
     data: equipment,
     setData: setEquipment,
     isLive,
+    isPending: equipmentPending,
     isError,
     refetch: refetchEquipment,
   } = useSourceData({
@@ -71,14 +75,18 @@ function EquipmentPage() {
     mockData: MOCK_EQUIPMENT,
     emptyValue: [],
   })
-  const { data: payments, setData: setPayments, refetch: refetchPayments } =
-    useSourceData({
-      queryKey: ['equipment-payments'],
-      queryFn: dashboardApi.equipment.payments,
-      mockData: MOCK_PAYMENTS,
-      emptyValue: [],
-    })
-  const { data: repairs } = useSourceData({
+  const {
+    data: payments,
+    setData: setPayments,
+    isPending: paymentsPending,
+    refetch: refetchPayments,
+  } = useSourceData({
+    queryKey: ['equipment-payments'],
+    queryFn: dashboardApi.equipment.payments,
+    mockData: MOCK_PAYMENTS,
+    emptyValue: [],
+  })
+  const { data: repairs, isPending: repairsPending } = useSourceData({
     queryKey: ['equipment-repairs'],
     queryFn: dashboardApi.equipment.repairs,
     mockData: MOCK_REPAIRS,
@@ -284,7 +292,9 @@ function EquipmentPage() {
           </div>
         </div>
 
-        {isLive && isError ? (
+        {isLive && equipmentPending ? (
+          <CardSkeleton count={8} />
+        ) : isLive && isError ? (
           <DataErrorState
             message="Couldn't reach the API. Check that the backend is running and you're logged in."
             onRetry={refetchEquipment}
@@ -360,6 +370,7 @@ function EquipmentPage() {
             page={safePaymentPage}
             onPageChange={setPaymentPage}
             emptyNote="No purchases recorded yet."
+            pending={isLive && paymentsPending}
           />
         </div>
 
@@ -378,6 +389,7 @@ function EquipmentPage() {
             page={safeRepairPage}
             onPageChange={setRepairPage}
             emptyNote="No repairs recorded yet."
+            pending={isLive && repairsPending}
           />
         </div>
       </div>

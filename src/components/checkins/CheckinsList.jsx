@@ -1,6 +1,18 @@
 import MemberAvatar from '../members/MemberAvatar'
 
-function CheckinsList({ members, insideIds, selectedId, onSelect }) {
+function CheckinsList({ members, insideIds, selectedId, onSelect, query = '' }) {
+  if (members.length === 0) {
+    return (
+      <div className="px-5 py-12 text-center">
+        <p className="text-sm font-semibold text-white/70">No members found</p>
+        {query && (
+          <p className="mt-1 text-xs text-white/40">
+            No members match “{query}”.
+          </p>
+        )}
+      </div>
+    )
+  }
   return (
     <ul className="divide-y divide-white/5">
       {members.map((member) => {

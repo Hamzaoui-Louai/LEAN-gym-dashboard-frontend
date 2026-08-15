@@ -4,6 +4,8 @@ import { PageTransitionProvider } from './components/PageTransition'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import DashboardLayout from './components/DashboardLayout'
+import FullPageLoader from './components/FullPageLoader'
+import AuthErrorScreen from './components/AuthErrorScreen'
 import LandingPage from './pages/LandingPage'
 import SignupPage from './pages/SignupPage'
 import LoginPage from './pages/LoginPage'
@@ -13,10 +15,20 @@ import { DASHBOARD_PAGES } from './lib/dashboardPages'
 
 const DashboardIndexPage = DASHBOARD_PAGES[0].component
 
-function VerifiedRoute({ children }) {
-  const { user, isLoading } = useAuth()
+function isGenuineAuthError(error) {
+  return error != null && error.response?.status !== 401
+}
 
-  if (isLoading) return null
+function VerifiedRoute({ children }) {
+  const { user, isLoading, error } = useAuth()
+
+  if (isLoading) return <FullPageLoader />
+
+  if (isGenuineAuthError(error)) {
+    return (
+      <AuthErrorScreen message="We couldn't reach the server to confirm your session. Check your connection and try again." />
+    )
+  }
 
   if (!user) return <Navigate to="/login" replace />
   if (!user.email_verified_at) return <Navigate to="/verify-email" replace />
@@ -25,9 +37,15 @@ function VerifiedRoute({ children }) {
 }
 
 function GuestRoute({ children }) {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, error } = useAuth()
 
-  if (isLoading) return null
+  if (isLoading) return <FullPageLoader />
+
+  if (isGenuineAuthError(error)) {
+    return (
+      <AuthErrorScreen message="We couldn't reach the server to check if you're signed in. Check your connection and try again." />
+    )
+  }
 
   if (user) {
     return user.email_verified_at ? (
@@ -41,9 +59,15 @@ function GuestRoute({ children }) {
 }
 
 function VerifyEmailRoute({ children }) {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, error } = useAuth()
 
-  if (isLoading) return null
+  if (isLoading) return <FullPageLoader />
+
+  if (isGenuineAuthError(error)) {
+    return (
+      <AuthErrorScreen message="We couldn't reach the server to confirm your session. Check your connection and try again." />
+    )
+  }
 
   if (!user) return <Navigate to="/login" replace />
   if (user.email_verified_at) return <Navigate to="/dashboard" replace />
