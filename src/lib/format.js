@@ -15,3 +15,7 @@ export function formatMoney(amount) {
     currency: 'USD',
   }).format(amount ?? 0)
 }
+
+export function formatMoneyCompact(amount) {
+  return formatMoney(amount).replace(/\.00$/, '')
+}

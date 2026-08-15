@@ -44,6 +44,12 @@ export const dashboardApi = {
   finances: {
     overview: async () => unwrapList(await api.get('/api/finances/overview')),
   },
+  dashboard: {
+    overview: async () => (await api.get('/api/dashboard/overview')).data,
+    insights: async () => (await api.get('/api/dashboard/insights')).data,
+    operations: async () => (await api.get('/api/dashboard/operations')).data,
+    finances: async () => (await api.get('/api/dashboard/finances')).data,
+  },
   user: {
     update: (payload) => api.put('/api/user', payload),
     password: (payload) => api.put('/api/user/password', payload),

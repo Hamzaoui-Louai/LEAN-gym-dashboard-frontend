@@ -75,17 +75,11 @@ function EquipmentPage() {
     mockData: MOCK_EQUIPMENT,
     emptyValue: [],
   })
-  const {
-    data: payments,
-    setData: setPayments,
-    isPending: paymentsPending,
-    refetch: refetchPayments,
-  } = useSourceData({
-    queryKey: ['equipment-payments'],
-    queryFn: dashboardApi.equipment.payments,
-    mockData: MOCK_PAYMENTS,
-    emptyValue: [],
-  })
+  const [mockPayments, setMockPayments] = useState(MOCK_PAYMENTS)
+  const payments = useMemo(
+    () => (isLive ? [] : mockPayments),
+    [isLive, mockPayments],
+  )
   const { data: repairs, isPending: repairsPending } = useSourceData({
     queryKey: ['equipment-repairs'],
     queryFn: dashboardApi.equipment.repairs,
@@ -165,13 +159,13 @@ function EquipmentPage() {
   const handleAdd = async (item) => {
     if (isLive) {
       await dashboardApi.equipment.create(item).catch(() => null)
-      await Promise.all([refetchEquipment(), refetchPayments()])
+      await refetchEquipment()
       return
     }
     const id = nextIdRef.current
     nextIdRef.current += 1
     setEquipment((current) => [...current, { ...item, id }])
-    setPayments((current) => [
+    setMockPayments((current) => [
       {
         id: `payment-${id}`,
         date: item.purchased_at,
@@ -370,7 +364,7 @@ function EquipmentPage() {
             page={safePaymentPage}
             onPageChange={setPaymentPage}
             emptyNote="No purchases recorded yet."
-            pending={isLive && paymentsPending}
+            pending={false}
           />
         </div>
 

@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import Panel from '../components/Panel'
+import SectionHeader from '../components/SectionHeader'
 import DonutChart from '../components/charts/DonutChart'
 import BarChart from '../components/charts/BarChart'
 import LineChart from '../components/charts/LineChart'
 import Legend from '../components/charts/Legend'
-import { formatMoney } from '../lib/format'
+import { Tile } from '../components/dashboard/widgets'
+import MetricCard from '../components/finances/MetricCard'
+import DonutLegend from '../components/finances/DonutLegend'
+import { formatMoneyCompact } from '../lib/format'
 import {
-  aggregateMonths,
   DEFAULT_PERIOD_ID,
-  EXPENSE_CATEGORIES,
-  EXPENSE_CATEGORY_LABELS,
-  EXPENSE_COLORS,
   MEMBERSHIP_COLORS,
   MEMBERSHIP_TYPES,
   MOCK_FINANCE_MONTHS,
@@ -21,69 +21,18 @@ import {
   rosterByTypeDetailsFor,
   rosterStatusCounts,
   rosterStatusCountsFor,
-  totalExpenses,
 } from '../lib/finances'
 import { MOCK_MEMBERS } from '../lib/members'
+import { buildFinanceMetrics } from '../lib/financeMetrics'
 import DataErrorState from '../components/DataErrorState'
 import { PageSkeleton } from '../components/Skeletons'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
 
-const money = (value) => formatMoney(value).replace(/\.00$/, '')
-
 const pillActive =
   'rounded-full bg-lime-400 px-4 py-2 text-xs font-semibold text-black hover:bg-lime-300'
 const pillIdle =
   'rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white/60 hover:bg-white/10 hover:text-white'
-
-const TONES = {
-  white: 'text-white',
-  lime: 'text-lime-400',
-  rose: 'text-rose-400',
-  sky: 'text-sky-400',
-  amber: 'text-amber-400',
-}
-
-function StatCard({ label, value, sub, tone = 'white' }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{label}</p>
-      <p className={`mt-3 text-2xl font-black tracking-tight ${TONES[tone]}`}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-white/40">{sub}</p>}
-    </div>
-  )
-}
-
-function SectionHeader({ title, subtitle }) {
-  return (
-    <div className="mt-8">
-      <h2 className="text-base font-bold text-white">{title}</h2>
-      {subtitle && <p className="mt-0.5 text-xs text-white/40">{subtitle}</p>}
-    </div>
-  )
-}
-
-function DonutLegend({ rows, format }) {
-  const total = rows.reduce((sum, row) => sum + row.value, 0)
-  return (
-    <ul className="mt-5 space-y-2.5">
-      {rows.map((row) => (
-        <li key={row.label} className="flex items-center justify-between gap-3 text-xs">
-          <span className="inline-flex items-center gap-2 text-white/60">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: row.color }} />
-            {row.label}
-          </span>
-          <span className="flex items-center gap-3">
-            <span className="font-semibold text-white">{format(row.value)}</span>
-            <span className="w-11 text-right text-white/40">
-              {((row.value / total) * 100).toFixed(0)}%
-            </span>
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 function FinancesPage() {
   const [periodId, setPeriodId] = useState(DEFAULT_PERIOD_ID)
@@ -154,61 +103,30 @@ function FinancesPage() {
   }
 
   const months = sourceMonths.slice(-period.months)
-  const window = aggregateMonths(months)
-  const latest = months[months.length - 1]
-  const previous = months.length > 1 ? months[months.length - 2] : latest
-
-  const expensesTotal = totalExpenses(window.expenses)
-  const netIncome = window.revenue - expensesTotal
-  const monthlyRevenue = latest.revenue
-  const monthlyExpenses = totalExpenses(latest.expenses)
-
-  const revenueGrowth = previous.revenue
-    ? ((latest.revenue - previous.revenue) / previous.revenue) * 100
-    : 0
-
-  const netMargin = window.revenue ? (netIncome / window.revenue) * 100 : 0
-  const bestMonth = [...months].sort((a, b) => netIncomeFor(b) - netIncomeFor(a))[0]
-
-  const revenueByMonth = months.map((m) => ({ label: m.label, value: m.revenue }))
-  const expensesByMonth = months.map((m) => ({ label: m.label, value: totalExpenses(m.expenses) }))
-  const revExpData = months.map((m) => ({
-    label: m.label,
-    revenue: m.revenue,
-    expenses: totalExpenses(m.expenses),
-  }))
-  const netIncomeByMonth = months.map((m) => ({ label: m.label, value: netIncomeFor(m) }))
-
-  const membershipDonut = MEMBERSHIP_TYPES.map((plan) => ({
-    label: plan,
-    value: window.memberships[plan],
-    color: MEMBERSHIP_COLORS[plan],
-  })).filter((row) => row.value > 0)
-
-  const mostProfitable = MEMBERSHIP_TYPES.reduce((best, plan) =>
-    window.memberships[plan] > window.memberships[best] ? plan : best,
-  MEMBERSHIP_TYPES[0])
-
-  const expenseDonut = EXPENSE_CATEGORIES.map((category) => ({
-    label: EXPENSE_CATEGORY_LABELS[category],
-    value: window.expenses[category],
-    color: EXPENSE_COLORS[category],
-  })).filter((row) => row.value > 0)
-
-  const staffSalaries = window.expenses.staff_salaries
-  const equipmentExpenses =
-    window.expenses.equipment_repairs + window.expenses.equipment_purchases
-  const staffVsEquipment = [
-    { label: 'Staff salaries', value: staffSalaries, color: EXPENSE_COLORS.staff_salaries },
-    { label: 'Equipment', value: equipmentExpenses, color: EXPENSE_COLORS.equipment_purchases },
-  ]
-
-  const subsTotal = Math.max(window.new_subscriptions + window.renewals, 1)
-
   const roster = isLive ? rosterByTypeDetailsFor(members) : rosterByTypeDetails()
-  const rosterDonut = roster
-    .filter((row) => row.count > 0)
-    .map((row) => ({ label: row.plan, value: row.count, color: MEMBERSHIP_COLORS[row.plan] }))
+  const {
+    aggregate,
+    latest,
+    previous,
+    expensesTotal,
+    netIncome,
+    monthlyRevenue,
+    monthlyExpenses,
+    revenueGrowth,
+    netMargin,
+    bestMonth,
+    revenueByMonth,
+    expensesByMonth,
+    revExpData,
+    netIncomeByMonth,
+    membershipDonut,
+    mostProfitable,
+    expenseDonut,
+    staffVsEquipment,
+    subsTotal,
+    rosterDonut,
+  } = buildFinanceMetrics({ months, roster })
+
   const statusCounts = isLive ? rosterStatusCountsFor(members) : rosterStatusCounts()
   const activeCount = statusCounts.active ?? 0
   const frozenCount = statusCounts.frozen ?? 0
@@ -233,16 +151,17 @@ function FinancesPage() {
 
       <SectionHeader title="Financial overview" subtitle={`Summary for ${period.label}`} />
       <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-5">
-        <StatCard label="Total revenue" value={money(window.revenue)} tone="lime" />
-        <StatCard label="Total expenses" value={money(expensesTotal)} tone="rose" />
-        <StatCard
+        <Tile size="md" label="Total revenue" value={formatMoneyCompact(aggregate.revenue)} tone="lime" />
+        <Tile size="md" label="Total expenses" value={formatMoneyCompact(expensesTotal)} tone="rose" />
+        <Tile
+          size="md"
           label="Net income"
-          value={money(netIncome)}
+          value={formatMoneyCompact(netIncome)}
           tone={netIncome >= 0 ? 'lime' : 'rose'}
           sub={`${netMargin.toFixed(1)}% margin`}
         />
-        <StatCard label="Monthly revenue" value={money(monthlyRevenue)} sub={latest.label} />
-        <StatCard label="Monthly expenses" value={money(monthlyExpenses)} sub={latest.label} />
+        <Tile size="md" label="Monthly revenue" value={formatMoneyCompact(monthlyRevenue)} sub={latest.label} />
+        <Tile size="md" label="Monthly expenses" value={formatMoneyCompact(monthlyExpenses)} sub={latest.label} />
       </div>
 
       <SectionHeader title="Revenue analytics" subtitle="Where your income comes from" />
@@ -261,7 +180,7 @@ function FinancesPage() {
           <div className="flex justify-center">
             <DonutChart data={membershipDonut} />
           </div>
-          <DonutLegend rows={membershipDonut} format={money} />
+          <DonutLegend rows={membershipDonut} format={formatMoneyCompact} />
         </Panel>
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -278,7 +197,7 @@ function FinancesPage() {
           </div>
           <div className="mt-4">
             <p className="text-xs text-white/40">This period</p>
-            <p className="mt-1 text-2xl font-black text-white">{money(window.revenue)}</p>
+            <p className="mt-1 text-2xl font-black text-white">{formatMoneyCompact(aggregate.revenue)}</p>
           </div>
         </Panel>
         <Panel
@@ -287,25 +206,17 @@ function FinancesPage() {
           subtitle="Volume in this period"
         >
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs text-white/40">New subscriptions</p>
-              <p className="mt-1 text-2xl font-black text-lime-400">
-                {window.new_subscriptions}
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs text-white/40">Renewals</p>
-              <p className="mt-1 text-2xl font-black text-sky-400">{window.renewals}</p>
-            </div>
+            <MetricCard label="New subscriptions" value={aggregate.new_subscriptions} tone="lime" />
+            <MetricCard label="Renewals" value={aggregate.renewals} tone="sky" />
           </div>
           <div className="mt-4 flex h-2 w-full overflow-hidden rounded-full bg-white/10">
             <div
               className="h-full bg-lime-400"
-              style={{ width: `${(window.new_subscriptions / subsTotal) * 100}%` }}
+              style={{ width: `${(aggregate.new_subscriptions / subsTotal) * 100}%` }}
             />
             <div
               className="h-full bg-sky-400"
-              style={{ width: `${(window.renewals / subsTotal) * 100}%` }}
+              style={{ width: `${(aggregate.renewals / subsTotal) * 100}%` }}
             />
           </div>
           <div className="mt-3">
@@ -335,7 +246,7 @@ function FinancesPage() {
           <div className="flex justify-center">
             <DonutChart data={expenseDonut} />
           </div>
-          <DonutLegend rows={expenseDonut} format={money} />
+          <DonutLegend rows={expenseDonut} format={formatMoneyCompact} />
         </Panel>
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -343,22 +254,20 @@ function FinancesPage() {
           <div className="flex justify-center">
             <DonutChart data={staffVsEquipment} />
           </div>
-          <DonutLegend rows={staffVsEquipment} format={money} />
+          <DonutLegend rows={staffVsEquipment} format={formatMoneyCompact} />
         </Panel>
         <Panel title="Equipment costs" subtitle="Repairs and purchases in this period">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs text-white/40">Equipment repair costs</p>
-              <p className="mt-1 text-2xl font-black text-amber-400">
-                {money(window.expenses.equipment_repairs)}
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs text-white/40">Equipment purchase costs</p>
-              <p className="mt-1 text-2xl font-black text-sky-400">
-                {money(window.expenses.equipment_purchases)}
-              </p>
-            </div>
+            <MetricCard
+              label="Equipment repair costs"
+              value={formatMoneyCompact(aggregate.expenses.equipment_repairs)}
+              tone="amber"
+            />
+            <MetricCard
+              label="Equipment purchase costs"
+              value={formatMoneyCompact(aggregate.expenses.equipment_purchases)}
+              tone="sky"
+            />
           </div>
         </Panel>
       </div>
@@ -376,7 +285,7 @@ function FinancesPage() {
             <p className="text-xs text-white/40">Top contributor</p>
             <p className="mt-1 text-2xl font-black text-lime-400">{mostProfitable}</p>
             <p className="mt-1 text-sm font-bold text-white">
-              {money(window.memberships[mostProfitable])}
+              {formatMoneyCompact(aggregate.memberships[mostProfitable])}
             </p>
           </div>
           <ul className="mt-4 space-y-2.5">
@@ -390,7 +299,7 @@ function FinancesPage() {
                   {plan}
                 </span>
                 <span className="font-semibold text-white">
-                  {money(window.memberships[plan])}
+                  {formatMoneyCompact(aggregate.memberships[plan])}
                 </span>
               </li>
             ))}
@@ -425,7 +334,7 @@ function FinancesPage() {
                   {row.plan}
                 </span>
                 <span className="text-white/50">
-                  {row.count} members · {money(row.averageRevenue)}
+                  {row.count} members · {formatMoneyCompact(row.averageRevenue)}
                 </span>
               </li>
             ))}
@@ -459,22 +368,17 @@ function FinancesPage() {
       <div className="mt-6">
         <Panel title="Profit summary" subtitle="Margin and best month in this period">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs text-white/40">Monthly profit margin</p>
-              <p className="mt-1 text-2xl font-black text-lime-400">
-                {netMargin.toFixed(1)}%
-              </p>
-              <p className="mt-1 text-xs text-white/40">
-                {money(netIncome)} of {money(window.revenue)} revenue
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs text-white/40">Best-performing month</p>
-              <p className="mt-1 text-2xl font-black text-amber-400">{bestMonth.label}</p>
-              <p className="mt-1 text-xs text-white/40">
-                {money(netIncomeFor(bestMonth))} net income
-              </p>
-            </div>
+            <MetricCard
+              label="Monthly profit margin"
+              value={`${netMargin.toFixed(1)}%`}
+              sub={`${formatMoneyCompact(netIncome)} of ${formatMoneyCompact(aggregate.revenue)} revenue`}
+            />
+            <MetricCard
+              label="Best-performing month"
+              value={bestMonth.label}
+              tone="amber"
+              sub={`${formatMoneyCompact(netIncomeFor(bestMonth))} net income`}
+            />
           </div>
         </Panel>
       </div>
