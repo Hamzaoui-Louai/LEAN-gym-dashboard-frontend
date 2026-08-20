@@ -2,13 +2,11 @@ import Panel from '../Panel'
 import ImageUploader from '../ImageUploader'
 import { InputField, buttonLime } from './form'
 
-function AccountPanel({ account, onChange, onSave, saved }) {
+function AccountPanel({ account, onChange, onSave, saved, submitting }) {
   return (
     <Panel title="Account" subtitle="Your profile details">
       <ImageUploader
         image={account.picture}
-        onImageChange={(picture) => onChange({ ...account, picture })}
-        onRemove={() => onChange({ ...account, picture: null })}
         label="Profile picture"
         previewClass="aspect-square w-24"
       />
@@ -35,8 +33,13 @@ function AccountPanel({ account, onChange, onSave, saved }) {
         </div>
       </div>
       <div className="mt-6 flex items-center gap-3">
-        <button type="button" onClick={onSave} className={buttonLime}>
-          Save changes
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={submitting}
+          className={`${buttonLime} disabled:pointer-events-none disabled:opacity-50`}
+        >
+          {submitting ? 'Saving changes…' : 'Save changes'}
         </button>
         {saved && <span className="text-xs font-medium text-lime-400">Saved ✓</span>}
       </div>

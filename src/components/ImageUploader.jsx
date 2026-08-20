@@ -2,22 +2,9 @@ const labelClass = 'block text-sm font-medium text-white/70'
 
 function ImageUploader({
   image,
-  onImageChange,
-  onRemove,
   label = 'Picture',
   previewClass = 'aspect-[4/3]',
 }) {
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') onImageChange(reader.result)
-    }
-    reader.readAsDataURL(file)
-  }
-
   return (
     <div>
       <span className={labelClass}>{label}</span>
@@ -54,7 +41,7 @@ function ImageUploader({
         )}
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white">
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -70,21 +57,11 @@ function ImageUploader({
             <path d="M12 3v12" />
           </svg>
           {image ? 'Change picture' : 'Upload picture'}
-          <input
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={handleFileChange}
-          />
-        </label>
+        </span>
         {image && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="rounded-full px-4 py-2 text-xs font-semibold text-white/50 transition hover:text-white"
-          >
+          <span className="rounded-full px-4 py-2 text-xs font-semibold text-white/50">
             Remove
-          </button>
+          </span>
         )}
       </div>
     </div>

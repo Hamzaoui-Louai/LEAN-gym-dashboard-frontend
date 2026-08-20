@@ -11,6 +11,7 @@ import DataErrorState from '../components/DataErrorState'
 import { PageSkeleton } from '../components/Skeletons'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
+import Toast from '../components/Toast'
 
 const iconClass = 'h-4 w-4'
 
@@ -148,6 +149,7 @@ function GymProfilePage() {
     emptyValue: [],
   })
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [gymError, setGymError] = useState(null)
 
   if (isLive && (gymPending || membersPending || staffPending || equipmentPending)) {
     return (
@@ -195,14 +197,18 @@ function GymProfilePage() {
   const stats = buildStats({ members, staff, equipment })
 
   const handleSave = async (next) => {
-    if (isLive) {
-      await dashboardApi.gym.update(next).catch(() => null)
-      await refetch()
+    try {
+      if (isLive) {
+        await dashboardApi.gym.update(next)
+        await refetch()
+        return
+      }
+      setGym(next)
+    } catch {
+      setGymError('Failed to save gym profile. Please try again.')
+    } finally {
       setIsEditOpen(false)
-      return
     }
-    setGym(next)
-    setIsEditOpen(false)
   }
 
   return (
@@ -401,6 +407,8 @@ function GymProfilePage() {
       {isEditOpen && (
         <GymProfileModal gym={gym} onClose={() => setIsEditOpen(false)} onSubmit={handleSave} />
       )}
+
+      <Toast message={gymError} onClose={() => setGymError(null)} />
     </div>
   )
 }

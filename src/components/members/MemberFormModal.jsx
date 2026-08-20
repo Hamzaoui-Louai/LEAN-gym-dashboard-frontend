@@ -2,24 +2,6 @@ import { useState } from 'react'
 import MembersModal from './MembersModal'
 import { MEMBERSHIP_PLANS } from '../../lib/members'
 
-function toISO(date) {
-  return date.toISOString().slice(0, 10)
-}
-
-function addMonths(date, months) {
-  const next = new Date(date)
-  next.setMonth(next.getMonth() + months)
-  return next
-}
-
-function computeEndsAt(plan, startedAt) {
-  const start = new Date(`${startedAt}T00:00:00`)
-  return plan.months > 0 ? toISO(addMonths(start, plan.months)) : null
-}
-
-const now = new Date()
-const TODAY_ISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-
 const inputClass =
   'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20 [color-scheme:dark]'
 const labelClass = 'block text-sm font-medium text-white/70'
@@ -60,15 +42,11 @@ function MemberForm({ mode, member, onClose, onSubmit }) {
   const [name, setName] = useState(member ? member.name : '')
   const [email, setEmail] = useState(member ? member.email : '')
   const [phone, setPhone] = useState(member ? member.phone : '')
-  const [status, setStatus] = useState(member ? member.status : 'active')
   const [planId, setPlanId] = useState(
     member
       ? MEMBERSHIP_PLANS.find((plan) => plan.label === member.membership.plan)
           ?.id ?? 'monthly'
       : 'monthly',
-  )
-  const [startedAt, setStartedAt] = useState(
-    member ? member.membership.started_at : TODAY_ISO,
   )
   const [errors, setErrors] = useState({})
 
@@ -86,20 +64,24 @@ function MemberForm({ mode, member, onClose, onSubmit }) {
       return
     }
 
+    if (mode === 'edit') {
+      onSubmit({
+        id: member.id,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      })
+      return
+    }
+
     onSubmit({
-      ...(mode === 'edit' && { id: member.id }),
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
-      status,
-      joined_at: mode === 'edit' ? member.joined_at : startedAt,
       membership: {
         plan: selectedPlan.label,
         price: selectedPlan.price,
-        started_at: startedAt,
-        ends_at: computeEndsAt(selectedPlan, startedAt),
       },
-      payments: mode === 'edit' ? member.payments : [],
     })
   }
 
@@ -155,7 +137,7 @@ function MemberForm({ mode, member, onClose, onSubmit }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {mode === 'add' && (
         <SelectField
           id="member-plan"
           label="Membership plan"
@@ -168,33 +150,7 @@ function MemberForm({ mode, member, onClose, onSubmit }) {
             </option>
           ))}
         </SelectField>
-        <SelectField
-          id="member-status"
-          label="Status"
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-        >
-          <option value="active">Active</option>
-          <option value="frozen">Frozen</option>
-          <option value="expired">Expired</option>
-        </SelectField>
-      </div>
-
-      <div>
-        <label htmlFor="member-start" className={labelClass}>
-          Membership starts
-        </label>
-        <input
-          id="member-start"
-          type="date"
-          value={startedAt}
-          onChange={(event) => setStartedAt(event.target.value)}
-          className={`mt-2 ${inputClass}`}
-        />
-        <p className="mt-1 text-xs text-white/40">
-          Ends on {computeEndsAt(selectedPlan, startedAt) ?? '—'}
-        </p>
-      </div>
+      )}
 
       <div className="mt-2 flex justify-end gap-3 border-t border-white/10 pt-5">
         <button
@@ -224,7 +180,7 @@ function MemberFormModal({ open, mode, member, onClose, onSubmit }) {
       description={
         mode === 'add'
           ? 'Create a profile so you can start tracking their membership.'
-          : `Update ${member?.name}'s profile and membership details.`
+          : `Update ${member?.name}'s profile details.`
       }
     >
       <MemberForm

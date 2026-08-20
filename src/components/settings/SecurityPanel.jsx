@@ -6,6 +6,7 @@ function SecurityPanel({
   onPasswordChange,
   passwordError,
   passwordSaved,
+  passwordSubmitting,
   onSave,
   sessions,
   onSessionsChange,
@@ -50,8 +51,13 @@ function SecurityPanel({
         />
       </div>
       <div className="mt-4 flex items-center gap-3">
-        <button type="button" onClick={onSave} className={buttonLime}>
-          Change password
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={passwordSubmitting}
+          className={`${buttonLime} disabled:pointer-events-none disabled:opacity-50`}
+        >
+          {passwordSubmitting ? 'Changing password…' : 'Change password'}
         </button>
         {passwordSaved && (
           <span className="text-xs font-medium text-lime-400">Password updated ✓</span>

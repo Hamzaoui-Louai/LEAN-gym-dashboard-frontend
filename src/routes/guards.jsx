@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import FullPageLoader from '../components/FullPageLoader'
 import AuthErrorScreen from '../components/AuthErrorScreen'
 
 const SESSION_ERROR_MESSAGE =
@@ -16,14 +15,12 @@ function isGenuineAuthError(error) {
 export function VerifiedRoute({ children }) {
   const { user, isLoading, error } = useAuth()
 
-  if (isLoading) return <FullPageLoader />
-
   if (isGenuineAuthError(error)) {
     return <AuthErrorScreen message={SESSION_ERROR_MESSAGE} />
   }
 
-  if (!user) return <Navigate to="/login" replace />
-  if (!user.email_verified_at) return <Navigate to="/verify-email" replace />
+  if (!isLoading && !user) return <Navigate to="/login" replace />
+  if (!isLoading && user && !user.email_verified_at) return <Navigate to="/verify-email" replace />
 
   return children
 }
@@ -31,13 +28,11 @@ export function VerifiedRoute({ children }) {
 export function GuestRoute({ children }) {
   const { user, isLoading, error } = useAuth()
 
-  if (isLoading) return <FullPageLoader />
-
   if (isGenuineAuthError(error)) {
     return <AuthErrorScreen message={GUEST_ERROR_MESSAGE} />
   }
 
-  if (user) {
+  if (!isLoading && user) {
     return user.email_verified_at ? (
       <Navigate to="/dashboard" replace />
     ) : (
@@ -51,14 +46,12 @@ export function GuestRoute({ children }) {
 export function VerifyEmailRoute({ children }) {
   const { user, isLoading, error } = useAuth()
 
-  if (isLoading) return <FullPageLoader />
-
   if (isGenuineAuthError(error)) {
     return <AuthErrorScreen message={SESSION_ERROR_MESSAGE} />
   }
 
-  if (!user) return <Navigate to="/login" replace />
-  if (user.email_verified_at) return <Navigate to="/dashboard" replace />
+  if (!isLoading && !user) return <Navigate to="/login" replace />
+  if (!isLoading && user && user.email_verified_at) return <Navigate to="/dashboard" replace />
 
   return children
 }

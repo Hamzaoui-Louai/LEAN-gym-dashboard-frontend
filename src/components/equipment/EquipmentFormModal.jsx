@@ -43,7 +43,6 @@ function SelectField({ id, label, value, onChange, children }) {
 }
 
 function EquipmentForm({ mode, item, onClose, onSubmit }) {
-  const [image, setImage] = useState(item ? item.image : null)
   const [name, setName] = useState(item ? item.name : '')
   const [category, setCategory] = useState(item ? item.category : '')
   const [state, setState] = useState(item ? item.state : 'operational')
@@ -73,7 +72,6 @@ function EquipmentForm({ mode, item, onClose, onSubmit }) {
       state,
       purchased_at: mode === 'edit' ? item.purchased_at : purchasedAt,
       price: priceValue,
-      image,
     })
   }
 
@@ -82,11 +80,7 @@ function EquipmentForm({ mode, item, onClose, onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-      <ImageUploader
-        image={image}
-        onImageChange={setImage}
-        onRemove={() => setImage(null)}
-      />
+      <ImageUploader image={item ? item.image : null} />
 
       <div>
         <label htmlFor="equipment-name" className={labelClass}>

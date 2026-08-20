@@ -40,7 +40,6 @@ function SelectField({ id, label, value, onChange, children }) {
 }
 
 function GymProfileForm({ gym, onClose, onSubmit }) {
-  const [logo, setLogo] = useState(gym.logo)
   const [name, setName] = useState(gym.name)
   const [description, setDescription] = useState(gym.description)
   const [address, setAddress] = useState(gym.address)
@@ -51,6 +50,7 @@ function GymProfileForm({ gym, onClose, onSubmit }) {
   const [days, setDays] = useState(gym.days_open)
   const [status, setStatus] = useState(gym.status)
   const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
 
   const toggleDay = (key) => {
     setDays((current) =>
@@ -70,17 +70,17 @@ function GymProfileForm({ gym, onClose, onSubmit }) {
       return
     }
 
+    setSubmitting(true)
     onSubmit({
-      name: name.trim(),
-      description: description.trim(),
-      address: address.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
+      name: (name || '').trim(),
+      description: (description || '').trim(),
+      address: (address || '').trim(),
+      email: (email || '').trim(),
+      phone: (phone || '').trim(),
       opens_at: opensAt,
       closes_at: closesAt,
       days_open: days,
       status,
-      logo,
     })
   }
 
@@ -90,9 +90,7 @@ function GymProfileForm({ gym, onClose, onSubmit }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
       <ImageUploader
-        image={logo}
-        onImageChange={setLogo}
-        onRemove={() => setLogo(null)}
+        image={gym.logo}
         label="Gym logo"
         previewClass="aspect-square"
       />
@@ -243,9 +241,10 @@ function GymProfileForm({ gym, onClose, onSubmit }) {
         </button>
         <button
           type="submit"
-          className="rounded-full bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300"
+          disabled={submitting}
+          className="rounded-full bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300 disabled:pointer-events-none disabled:opacity-50"
         >
-          Save changes
+          {submitting ? 'Saving changes…' : 'Save changes'}
         </button>
       </div>
     </form>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useDataSource } from './useDataSource'
+import { useAuth } from './useAuth'
 
 const DEFAULT_STALE_TIME = 5 * 60 * 1000
 
@@ -12,6 +13,7 @@ export function useSourceData({
   staleTime = DEFAULT_STALE_TIME,
 }) {
   const { source } = useDataSource()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [local, setLocal] = useState(mockData)
 
@@ -20,7 +22,7 @@ export function useSourceData({
   const query = useQuery({
     queryKey,
     queryFn,
-    enabled: isLive,
+    enabled: isLive && !!user,
     retry: false,
     staleTime,
   })

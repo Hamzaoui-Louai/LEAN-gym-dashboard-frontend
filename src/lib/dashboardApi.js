@@ -16,6 +16,9 @@ export const dashboardApi = {
     create: (payload) => api.post('/api/members', payload),
     update: (payload) => api.put(`/api/members/${payload.id}`, payload),
     remove: (id) => api.delete(`/api/members/${id}`),
+    subscribe: (id, payload) => api.post(`/api/members/${id}/subscribe`, payload),
+    freeze: (id) => api.post(`/api/members/${id}/freeze`),
+    unfreeze: (id) => api.post(`/api/members/${id}/unfreeze`),
   },
   staff: {
     list: async () => unwrapList(await api.get('/api/staff')),

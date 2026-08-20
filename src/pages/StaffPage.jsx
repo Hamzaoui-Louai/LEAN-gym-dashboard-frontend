@@ -12,6 +12,7 @@ import { formatDate, formatMoney } from '../lib/format'
 import { MOCK_STAFF } from '../lib/staff'
 import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
+import Toast from '../components/Toast'
 
 const PAYSLIP_PAGE_SIZE = 15
 const PAGE_SIZE = 15
@@ -38,6 +39,7 @@ function StaffPage() {
   const [editingStaff, setEditingStaff] = useState(null)
   const [viewingStaff, setViewingStaff] = useState(null)
   const [payslipFor, setPayslipFor] = useState(null)
+  const [payslipError, setPayslipError] = useState(null)
   const nextIdRef = useRef(MOCK_STAFF.length + 1)
   const tableAreaRef = useRef(null)
   const [overflowing, setOverflowing] = useState(false)
@@ -127,20 +129,24 @@ function StaffPage() {
 
   const handleAddPayslip = async (payslip) => {
     if (!payslipFor) return
-    if (isLive) {
-      await dashboardApi.staff.addPayslip(payslipFor.id, payslip).catch(() => null)
-      await refetch()
+    try {
+      if (isLive) {
+        await dashboardApi.staff.addPayslip(payslipFor.id, payslip)
+        await refetch()
+        return
+      }
+      setStaff((current) =>
+        current.map((person) =>
+          person.id === payslipFor.id
+            ? { ...person, payslips: [...person.payslips, payslip] }
+            : person,
+        ),
+      )
+    } catch {
+      setPayslipError('Failed to save payslip. Please try again.')
+    } finally {
       setPayslipFor(null)
-      return
     }
-    setStaff((current) =>
-      current.map((person) =>
-        person.id === payslipFor.id
-          ? { ...person, payslips: [...person.payslips, payslip] }
-          : person,
-      ),
-    )
-    setPayslipFor(null)
   }
 
   const isEmpty = staff.length === 0
@@ -446,6 +452,8 @@ function StaffPage() {
         onClose={() => setPayslipFor(null)}
         onSubmit={handleAddPayslip}
       />
+
+      <Toast message={payslipError} onClose={() => setPayslipError(null)} />
     </div>
   )
 }

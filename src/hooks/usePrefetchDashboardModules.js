@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useDataSource } from './useDataSource'
+import { useAuth } from './useAuth'
 import { dashboardApi } from '../lib/dashboardApi'
 
 const STALE_TIME = 5 * 60 * 1000
@@ -38,10 +39,11 @@ function isOwnKey(ownKeys, key) {
 export function usePrefetchDashboardModules() {
   const { pathname } = useLocation()
   const { source } = useDataSource()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    if (source !== 'api') return
+    if (source !== 'api' || !user) return
 
     const path = pathname.replace(/\/$/, '') || '/dashboard'
     const ownKeys = OWN_KEYS_BY_PATH[path]
@@ -77,7 +79,7 @@ export function usePrefetchDashboardModules() {
       done = true
       unsubscribe()
     }
-  }, [pathname, source, queryClient])
+  }, [pathname, source, user, queryClient])
 }
 
 export function PrefetchDashboardModules() {

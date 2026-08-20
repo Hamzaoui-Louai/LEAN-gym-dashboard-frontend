@@ -3,6 +3,8 @@ import PageHeader from '../components/PageHeader'
 import MembersTable from '../components/members/MembersTable'
 import MemberFormModal from '../components/members/MemberFormModal'
 import MemberDetailsModal from '../components/members/MemberDetailsModal'
+import SubscribeModal from '../components/members/SubscribeModal'
+import ConfirmActionModal from '../components/members/ConfirmActionModal'
 import Pagination from '../components/Pagination'
 import DataErrorState from '../components/DataErrorState'
 import { TableSkeleton } from '../components/Skeletons'
@@ -32,6 +34,9 @@ function MembersPage() {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
   const [viewingMember, setViewingMember] = useState(null)
+  const [subscribingMember, setSubscribingMember] = useState(null)
+  const [freezingMember, setFreezingMember] = useState(null)
+  const [unfreezingMember, setUnfreezingMember] = useState(null)
   const nextIdRef = useRef(MOCK_MEMBERS.length + 1)
   const tableAreaRef = useRef(null)
   const [overflowing, setOverflowing] = useState(false)
@@ -85,7 +90,77 @@ function MembersPage() {
       return
     }
     setMembers((current) =>
-      current.map((item) => (item.id === member.id ? member : item)),
+      current.map((item) =>
+        item.id === member.id ? { ...item, ...member } : item,
+      ),
+    )
+  }
+
+  const handleSubscribe = async (memberId, payload) => {
+    if (isLive) {
+      await dashboardApi.members.subscribe(memberId, payload).catch(() => null)
+      await refetch()
+      return
+    }
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const planMonths = { Monthly: 1, Quarterly: 3, Annual: 12, 'Pay-as-you-go': 0 }
+    const months = planMonths[payload.plan] ?? 0
+    const endDate = months > 0 ? (() => {
+      const d = new Date(`${today}T00:00:00`)
+      d.setMonth(d.getMonth() + months)
+      return d.toISOString().slice(0, 10)
+    })() : null
+
+    setMembers((current) =>
+      current.map((item) =>
+        item.id === memberId
+          ? {
+              ...item,
+              status: 'active',
+              membership: {
+                plan: payload.plan,
+                price: payload.price,
+                started_at: today,
+                ends_at: endDate,
+              },
+            }
+          : item,
+      ),
+    )
+  }
+
+  const handleFreeze = async (memberId) => {
+    if (isLive) {
+      await dashboardApi.members.freeze(memberId).catch(() => null)
+      await refetch()
+      return
+    }
+    setMembers((current) =>
+      current.map((item) =>
+        item.id === memberId
+          ? { ...item, status: 'frozen', membership: { ...item.membership, ends_at: null } }
+          : item,
+      ),
+    )
+  }
+
+  const handleUnfreeze = async (memberId) => {
+    if (isLive) {
+      await dashboardApi.members.unfreeze(memberId).catch(() => null)
+      await refetch()
+      return
+    }
+    setMembers((current) =>
+      current.map((item) => {
+        if (item.id !== memberId) return item
+        const originalEnds = item.membership.ends_at ?? item.membership.started_at
+        return {
+          ...item,
+          status: 'active',
+          membership: { ...item.membership, ends_at: originalEnds },
+        }
+      }),
     )
   }
 
@@ -252,7 +327,7 @@ function MembersPage() {
                 No members found
               </h3>
               <p className="text-sm text-white/60">
-                No members match “{query}”.
+                No members match "{query}".
               </p>
             </div>
           ) : (
@@ -260,6 +335,9 @@ function MembersPage() {
               members={displayed}
               onView={setViewingMember}
               onEdit={setEditingMember}
+              onSubscribe={setSubscribingMember}
+              onFreeze={setFreezingMember}
+              onUnfreeze={setUnfreezingMember}
             />
           )}
 
@@ -336,6 +414,29 @@ function MembersPage() {
           setViewingMember(null)
           setEditingMember(member)
         }}
+      />
+
+      <SubscribeModal
+        open={Boolean(subscribingMember)}
+        member={subscribingMember}
+        onClose={() => setSubscribingMember(null)}
+        onSubscribe={handleSubscribe}
+      />
+
+      <ConfirmActionModal
+        open={Boolean(freezingMember)}
+        member={freezingMember}
+        action="freeze"
+        onClose={() => setFreezingMember(null)}
+        onConfirm={handleFreeze}
+      />
+
+      <ConfirmActionModal
+        open={Boolean(unfreezingMember)}
+        member={unfreezingMember}
+        action="unfreeze"
+        onClose={() => setUnfreezingMember(null)}
+        onConfirm={handleUnfreeze}
       />
     </div>
   )

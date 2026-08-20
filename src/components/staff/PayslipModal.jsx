@@ -52,6 +52,7 @@ function PayslipForm({ person, onClose, onSubmit }) {
   const [method, setMethod] = useState('Card')
   const [status, setStatus] = useState('paid')
   const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -61,6 +62,7 @@ function PayslipForm({ person, onClose, onSubmit }) {
       return
     }
     setErrors({})
+    setSubmitting(true)
 
     onSubmit({
       id: `payslip-${person.id}-${period}`,
@@ -141,9 +143,10 @@ function PayslipForm({ person, onClose, onSubmit }) {
         </button>
         <button
           type="submit"
-          className="rounded-full bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300"
+          disabled={submitting}
+          className="rounded-full bg-lime-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-lime-300 disabled:pointer-events-none disabled:opacity-50"
         >
-          Save payslip
+          {submitting ? 'Saving payslip…' : 'Save payslip'}
         </button>
       </div>
     </form>

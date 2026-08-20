@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { usePageTransition } from '../../hooks/usePageTransition'
 import { DASHBOARD_PAGES } from '../../lib/dashboardPages'
 import { ICONS, iconClass } from '../DashboardIcons'
+import { Skeleton } from '../Skeletons'
 
 function Sidebar({ onNavClick }) {
   const { user, logout } = useAuth()
@@ -24,15 +25,27 @@ function Sidebar({ onNavClick }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lime-400 text-sm font-black text-black">
-          {initial}
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-white">
-            {user?.name ?? 'Member'}
-          </p>
-          <p className="truncate text-xs text-white/50">{user?.email}</p>
-        </div>
+        {user ? (
+          <>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lime-400 text-sm font-black text-black">
+              {initial}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-white">
+                {user.name}
+              </p>
+              <p className="truncate text-xs text-white/50">{user.email}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+            <div className="min-w-0 space-y-2">
+              <Skeleton className="h-4 w-28 rounded" />
+              <Skeleton className="h-3 w-36 rounded" />
+            </div>
+          </>
+        )}
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
