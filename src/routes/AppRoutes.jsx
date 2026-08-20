@@ -4,6 +4,7 @@ import LandingPage from '../pages/LandingPage'
 import SignupPage from '../pages/SignupPage'
 import LoginPage from '../pages/LoginPage'
 import EmailVerificationPage from '../pages/EmailVerificationPage'
+import GoogleCallbackPage from '../pages/GoogleCallbackPage'
 import NotFoundPage from '../pages/NotFoundPage'
 import { DASHBOARD_PAGES } from '../lib/dashboardPages'
 import { GuestRoute, VerifiedRoute, VerifyEmailRoute } from './guards'
@@ -40,6 +41,7 @@ function AppRoutes() {
         }
       />
       <Route path="/email-verified" element={<EmailVerifiedHandler />} />
+      <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
       <Route
         path="/dashboard"
         element={

@@ -83,3 +83,70 @@ export function PageSkeleton() {
     </div>
   )
 }
+
+export function GymProfileSkeleton() {
+  return (
+    <div className="flex flex-col">
+      {/* Profile card */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03]">
+        <div className="flex flex-col gap-5 p-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-5">
+            <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="mt-3 h-4 w-64 max-w-full" />
+              <Skeleton className="mt-3 h-3 w-48" />
+              <Skeleton className="mt-2 h-3 w-36" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-32 shrink-0 rounded-full" />
+        </div>
+      </div>
+
+      {/* 4 stat cards */}
+      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="mt-4 h-8 w-12" />
+          </div>
+        ))}
+      </div>
+
+      {/* 2 info panels */}
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-4">
+          <Skeleton className="h-4 w-36" />
+          <div className="mt-4 space-y-4">
+            {Array.from({ length: 2 }, (_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+                <div className="flex-1">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="mt-2 h-4 w-40" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-4">
+          <Skeleton className="h-4 w-32" />
+          <div className="mt-4 space-y-4">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+                <div className="flex-1">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="mt-2 h-4 w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

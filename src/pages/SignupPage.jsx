@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import TransitionLink from '../components/TransitionLink'
 import GlowBackground from '../components/GlowBackground'
 import { usePageTransition } from '../hooks/usePageTransition'
@@ -16,8 +16,38 @@ function SignupPage() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState(null)
+  const [scopeToast, setScopeToast] = useState(false)
+  const [scopeClosing, setScopeClosing] = useState(false)
   const { register } = useAuth()
   const { start } = usePageTransition()
+
+  const showScopeToast = () => {
+    setScopeClosing(false)
+    setScopeToast(true)
+  }
+  const closeScopeToast = () => {
+    if (!scopeToast) return
+    setScopeClosing(true)
+    setTimeout(() => {
+      setScopeToast(false)
+      setScopeClosing(false)
+    }, 300)
+  }
+
+  useEffect(() => {
+    if (!scopeToast) return
+    const timer = setTimeout(() => setScopeClosing(true), 5000)
+    return () => clearTimeout(timer)
+  }, [scopeToast])
+
+  useEffect(() => {
+    if (!scopeClosing) return
+    const timer = setTimeout(() => {
+      setScopeToast(false)
+      setScopeClosing(false)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [scopeClosing])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -43,6 +73,10 @@ function SignupPage() {
   }
 
   const field = (id) => (fieldErrors[id] ? fieldErrors[id][0] : null)
+
+  const handleGoogleSignup = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google/redirect`
+  }
 
   return (
     <div className="grid min-h-screen bg-black lg:grid-cols-12">
@@ -228,7 +262,7 @@ function SignupPage() {
             </div>
 
             <div className="mt-6 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
-              <button type="button" className={providerButtonClass}>
+              <button type="button" className={providerButtonClass} onClick={handleGoogleSignup}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4">
                   <path
                     fill="#4285F4"
@@ -249,13 +283,13 @@ function SignupPage() {
                 </svg>
                 Google
               </button>
-              <button type="button" className={providerButtonClass}>
+              <button type="button" className={providerButtonClass} onClick={showScopeToast}>
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
                   <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                 </svg>
                 Apple
               </button>
-              <button type="button" className={providerButtonClass}>
+              <button type="button" className={providerButtonClass} onClick={showScopeToast}>
                 <svg viewBox="0 0 24 24" className="h-4 w-4">
                   <path fill="#F25022" d="M1 1h10v10H1z" />
                   <path fill="#7FBA00" d="M13 1h10v10H13z" />
@@ -298,6 +332,43 @@ function SignupPage() {
           className="absolute inset-0 bg-gradient-to-b from-black via-black/30 to-transparent lg:bg-gradient-to-r lg:from-black lg:via-black/10 lg:to-transparent"
         />
       </div>
+
+      {scopeToast && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm transition-opacity duration-300 ${scopeClosing ? 'opacity-0' : 'opacity-100'}`}
+          onClick={closeScopeToast}
+        >
+          <div
+            role="alert"
+            className={`w-full max-w-md rounded-2xl border border-lime-400/40 bg-zinc-900/90 p-6 shadow-2xl backdrop-blur-xl ${scopeClosing ? 'animate-fade-out' : 'animate-fade-up'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-white">Just a showcase</h3>
+              <button
+                type="button"
+                onClick={closeScopeToast}
+                aria-label="Close notification"
+                className="rounded-full p-1 text-white/50 transition hover:bg-white/10 hover:text-white"
+              >
+                <svg viewBox="0 0 16 16" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 4l8 8M12 4l-8 8" />
+                </svg>
+              </button>
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-white/70">
+              Apple and Microsoft sign-in are not yet available — this is just a preview of the interface.
+            </p>
+            <button
+              type="button"
+              onClick={closeScopeToast}
+              className="mt-5 rounded-full bg-lime-400 px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-black transition hover:bg-lime-300"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
