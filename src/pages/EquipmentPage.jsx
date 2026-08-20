@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import EquipmentCard from '../components/equipment/EquipmentCard'
 import EquipmentFormModal from '../components/equipment/EquipmentFormModal'
+import ConfirmActionModal from '../components/equipment/ConfirmActionModal'
 import Pagination from '../components/Pagination'
 import DataErrorState from '../components/DataErrorState'
 import { CardSkeleton, TableSkeleton } from '../components/Skeletons'
@@ -76,11 +77,17 @@ function EquipmentPage() {
     emptyValue: [],
   })
   const [mockPayments, setMockPayments] = useState(MOCK_PAYMENTS)
-  const payments = useMemo(
-    () => (isLive ? [] : mockPayments),
-    [isLive, mockPayments],
-  )
-  const { data: repairs, isPending: repairsPending } = useSourceData({
+  const {
+    data: purchases,
+    isPending: purchasesPending,
+    refetch: refetchPurchases,
+  } = useSourceData({
+    queryKey: ['equipment-purchases'],
+    queryFn: dashboardApi.equipment.purchases,
+    mockData: isLive ? [] : mockPayments,
+    emptyValue: [],
+  })
+  const { data: repairs, isPending: repairsPending, refetch: refetchRepairs } = useSourceData({
     queryKey: ['equipment-repairs'],
     queryFn: dashboardApi.equipment.repairs,
     mockData: MOCK_REPAIRS,
@@ -93,6 +100,8 @@ function EquipmentPage() {
   const [repairPage, setRepairPage] = useState(1)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  const [statusAction, setStatusAction] = useState(null)
+  const [statusLoadingId, setStatusLoadingId] = useState(null)
   const nextIdRef = useRef(MOCK_EQUIPMENT.length + 1)
 
   const filtered = useMemo(() => {
@@ -116,24 +125,24 @@ function EquipmentPage() {
     safePage * PAGE_SIZE,
   )
 
-  const paymentTotalPages = Math.max(1, Math.ceil(payments.length / PAGE_SIZE))
+  const paymentTotalPages = Math.max(1, Math.ceil(purchases.length / PAGE_SIZE))
   const safePaymentPage = Math.min(paymentPage, paymentTotalPages)
-  const displayedPayments = payments
+  const displayedPayments = purchases
     .slice((safePaymentPage - 1) * PAGE_SIZE, safePaymentPage * PAGE_SIZE)
     .map((payment) => ({
       id: payment.id,
-      title: payment.item,
-      subtitle: `${formatDate(payment.date)} · ${payment.method}`,
+      title: payment.equipment,
+      subtitle: formatDate(payment.date),
       amount: payment.amount,
       status: payment.status,
     }))
 
   const paymentTotal = useMemo(
     () =>
-      payments
+      purchases
         .filter((payment) => payment.status === 'paid')
         .reduce((sum, payment) => sum + payment.amount, 0),
-    [payments],
+    [purchases],
   )
 
   const repairTotalPages = Math.max(1, Math.ceil(repairs.length / PAGE_SIZE))
@@ -160,6 +169,7 @@ function EquipmentPage() {
     if (isLive) {
       await dashboardApi.equipment.create(item).catch(() => null)
       await refetchEquipment()
+      await refetchPurchases()
       return
     }
     const id = nextIdRef.current
@@ -169,7 +179,7 @@ function EquipmentPage() {
       {
         id: `payment-${id}`,
         date: item.purchased_at,
-        item: item.name,
+        equipment: item.name,
         amount: item.price,
         method: 'Card',
         status: 'paid',
@@ -187,6 +197,42 @@ function EquipmentPage() {
     setEquipment((current) =>
       current.map((entry) => (entry.id === item.id ? item : entry)),
     )
+  }
+
+  const handleStatusTransition = async (item, action, payload) => {
+    setStatusLoadingId(item.id)
+    try {
+      if (isLive) {
+        if (action === 'repair') {
+          await dashboardApi.equipment.markUnderRepair(item.id, payload)
+        } else if (action === 'repaired') {
+          await dashboardApi.equipment.markRepaired(item.id)
+        } else if (action === 'out-of-order') {
+          await dashboardApi.equipment.markOutOfOrder(item.id)
+        }
+        await refetchEquipment()
+        if (action === 'repair') await refetchRepairs()
+        return
+      }
+
+      const stateMap = {
+        repair: 'under_repair',
+        repaired: 'operational',
+        'out-of-order': 'out_of_order',
+      }
+      setEquipment((current) =>
+        current.map((entry) =>
+          entry.id === item.id ? { ...entry, state: stateMap[action] } : entry,
+        ),
+      )
+      if (action === 'repair' && payload?.description) {
+        const now = new Date()
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+        setMockPayments((current) => current)
+      }
+    } finally {
+      setStatusLoadingId(null)
+    }
   }
 
   const isEmpty = equipment.length === 0
@@ -336,7 +382,13 @@ function EquipmentPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 px-6 py-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {displayed.map((item) => (
-              <EquipmentCard key={item.id} item={item} onOpen={setEditingItem} />
+              <EquipmentCard
+                key={item.id}
+                item={item}
+                onOpen={setEditingItem}
+                onStatusAction={(item, action) => setStatusAction({ item, action })}
+                loading={statusLoadingId === item.id}
+              />
             ))}
           </div>
         )}
@@ -352,9 +404,9 @@ function EquipmentPage() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.03]">
           <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
-              <h2 className="text-sm font-bold text-white">Payment history</h2>
+              <h2 className="text-sm font-bold text-white">Purchase history</h2>
               <p className="mt-0.5 text-xs text-white/40">
-                {payments.length} purchases · {formatMoney(paymentTotal)} paid
+                {purchases.length} purchases · {formatMoney(paymentTotal)} paid
               </p>
             </div>
           </div>
@@ -364,7 +416,7 @@ function EquipmentPage() {
             page={safePaymentPage}
             onPageChange={setPaymentPage}
             emptyNote="No purchases recorded yet."
-            pending={false}
+            pending={isLive && purchasesPending}
           />
         </div>
 
@@ -406,6 +458,19 @@ function EquipmentPage() {
         onSubmit={(item) => {
           handleEdit(item)
           setEditingItem(null)
+        }}
+      />
+
+      <ConfirmActionModal
+        open={Boolean(statusAction)}
+        item={statusAction?.item}
+        action={statusAction?.action}
+        onClose={() => setStatusAction(null)}
+        onConfirm={async (payload) => {
+          if (statusAction) {
+            await handleStatusTransition(statusAction.item, statusAction.action, payload)
+            setStatusAction(null)
+          }
         }}
       />
     </div>

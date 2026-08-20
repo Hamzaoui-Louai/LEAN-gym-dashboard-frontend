@@ -29,11 +29,13 @@ export const dashboardApi = {
   },
   equipment: {
     list: async () => unwrapList(await api.get('/api/equipment')),
-    payments: async () =>
-      unwrapList(await api.get('/api/equipment/payments')),
+    purchases: async () => unwrapList(await api.get('/api/equipment/purchases')),
     repairs: async () => unwrapList(await api.get('/api/equipment/repairs')),
     create: (payload) => api.post('/api/equipment', payload),
     update: (payload) => api.put(`/api/equipment/${payload.id}`, payload),
+    markUnderRepair: (id, payload) => api.post(`/api/equipment/${id}/repair`, payload),
+    markRepaired: (id) => api.post(`/api/equipment/${id}/repaired`),
+    markOutOfOrder: (id) => api.post(`/api/equipment/${id}/out-of-order`),
   },
   checkins: {
     list: async () => unwrapList(await api.get('/api/checkins')),

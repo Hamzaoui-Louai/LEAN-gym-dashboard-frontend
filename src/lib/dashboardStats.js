@@ -40,7 +40,7 @@ export function computeOverviewStats({ members, staff, equipment, checkins }) {
     activeStaff: staff.filter((person) => person.status === 'active').length,
     totalEquipment: equipment.length,
     availableEquipment: equipment.filter(
-      (item) => item.state === 'operational' || item.state === 'in_use',
+      (item) => item.state === 'operational',
     ).length,
     maintenanceEquipment: equipment.filter((item) => item.state === 'under_repair').length,
     brokenEquipment: equipment.filter((item) => item.state === 'out_of_order').length,
@@ -116,7 +116,7 @@ export function computeOperationsStats({ staff, equipment, repairs }) {
       .slice(0, 5),
     totalEquipment: equipment.length,
     availableEquipment: equipment.filter(
-      (item) => item.state === 'operational' || item.state === 'in_use',
+      (item) => item.state === 'operational',
     ).length,
     maintenanceEquipment: equipment.filter((item) => item.state === 'under_repair').length,
     brokenEquipment: equipment.filter((item) => item.state === 'out_of_order').length,
