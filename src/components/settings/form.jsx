@@ -1,3 +1,5 @@
+import Select from '../Select'
+
 export const inputClass =
   'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-white/30 focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20'
 
@@ -47,17 +49,9 @@ export function SelectField({ label, value, onChange, options }) {
   return (
     <label className="block">
       <FieldLabel>{label}</FieldLabel>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={`mt-2 appearance-none ${inputClass} [color-scheme:dark]`}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="mt-2">
+        <Select value={value} onChange={onChange} options={options} />
+      </div>
     </label>
   )
 }

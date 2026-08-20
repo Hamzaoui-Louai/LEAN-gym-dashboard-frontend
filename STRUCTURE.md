@@ -72,6 +72,7 @@ frontend/
     │   ├── Panel.jsx                  # Card wrapper for dashboard content blocks
     │   ├── SectionHeader.jsx          # Section title + subtitle (shared by dashboard pages)
     │   ├── Pagination.jsx             # Shared pagination control
+    │   ├── Select.jsx                 # Custom styled dropdown (listbox popup, keyboard nav)
     │   ├── DataSourceToggle.jsx       # Mock / Live API mode toggle
     │   ├── DataErrorBanner.jsx        # Inline error banner with retry
     │   ├── DataErrorState.jsx         # Full error state with retry

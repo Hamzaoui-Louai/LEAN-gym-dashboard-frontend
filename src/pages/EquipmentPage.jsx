@@ -5,6 +5,7 @@ import EquipmentFormModal from '../components/equipment/EquipmentFormModal'
 import ConfirmActionModal from '../components/equipment/ConfirmActionModal'
 import Pagination from '../components/Pagination'
 import DataErrorState from '../components/DataErrorState'
+import Select from '../components/Select'
 import { CardSkeleton, TableSkeleton } from '../components/Skeletons'
 import { PaymentBadge } from '../components/members/MemberBadges'
 import { formatDate, formatMoney } from '../lib/format'
@@ -19,9 +20,6 @@ import { dashboardApi } from '../lib/dashboardApi'
 import { useSourceData } from '../hooks/useSourceData'
 
 const PAGE_SIZE = 15
-
-const selectClass =
-  'w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-4 pr-10 text-sm text-white transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20'
 
 function HistoryList({ rows, totalPages, page, onPageChange, emptyNote, pending }) {
   return (
@@ -272,36 +270,22 @@ function EquipmentPage() {
             className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white placeholder-white/30 transition focus:border-lime-400/60 focus:outline-none focus:ring-2 focus:ring-lime-400/20"
           />
         </div>
-        <div className="relative lg:w-52">
-          <select
-            value={stateFilter}
-            onChange={(event) => {
-              setStateFilter(event.target.value)
-              setPage(1)
-            }}
-            aria-label="Filter by state"
-            className={`${selectClass} [color-scheme:dark]`}
-          >
-            <option value="all">All states</option>
-            {EQUIPMENT_STATE_ORDER.map((value) => (
-              <option key={value} value={value}>
-                {EQUIPMENT_STATES[value]}
-              </option>
-            ))}
-          </select>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </div>
+        <Select
+          className="lg:w-52"
+          value={stateFilter}
+          onChange={(next) => {
+            setStateFilter(next)
+            setPage(1)
+          }}
+          ariaLabel="Filter by state"
+          options={[
+            { value: 'all', label: 'All states' },
+            ...EQUIPMENT_STATE_ORDER.map((value) => ({
+              value,
+              label: EQUIPMENT_STATES[value],
+            })),
+          ]}
+        />
         <button
           type="button"
           onClick={() => setIsAddOpen(true)}

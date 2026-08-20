@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import MembersModal from '../members/MembersModal'
+import Select from '../Select'
 
 const now = new Date()
 const CURRENT_MONTH = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -14,33 +15,14 @@ function periodLabel(value) {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
-function SelectField({ id, label, value, onChange, children }) {
+function SelectField({ id, label, value, onChange, options }) {
   return (
     <div>
       <label htmlFor={id} className={labelClass}>
         {label}
       </label>
-      <div className="relative mt-2">
-        <select
-          id={id}
-          value={value}
-          onChange={onChange}
-          className={`${inputClass} appearance-none pr-10`}
-        >
-          {children}
-        </select>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+      <div className="mt-2">
+        <Select id={id} value={value} onChange={onChange} options={options} />
       </div>
     </div>
   )
@@ -115,22 +97,24 @@ function PayslipForm({ person, onClose, onSubmit }) {
           id="payslip-method"
           label="Payment method"
           value={method}
-          onChange={(event) => setMethod(event.target.value)}
-        >
-          <option value="Card">Card</option>
-          <option value="Cash">Cash</option>
-          <option value="Transfer">Transfer</option>
-        </SelectField>
+          onChange={setMethod}
+          options={[
+            { value: 'Card', label: 'Card' },
+            { value: 'Cash', label: 'Cash' },
+            { value: 'Transfer', label: 'Transfer' },
+          ]}
+        />
         <SelectField
           id="payslip-status"
           label="Status"
           value={status}
-          onChange={(event) => setStatus(event.target.value)}
-        >
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-        </SelectField>
+          onChange={setStatus}
+          options={[
+            { value: 'paid', label: 'Paid' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'failed', label: 'Failed' },
+          ]}
+        />
       </div>
 
       <div className="mt-2 flex justify-end gap-3 border-t border-white/10 pt-5">
